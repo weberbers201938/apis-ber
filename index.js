@@ -1,0 +1,791 @@
+const login = require("./fca/orion/fca-project-orion");
+const fs = require('fs');
+const port = 3000;
+const cors = require('cors');
+const express = require('express');
+const app = express();
+const axios = require('axios')
+const Multer = require('multer');;
+const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
+const moment = require("moment-timezone");
+const time = moment.tz("Asia/Manila").format("DD/MM/YYYY || HH:mm:s");
+const dl = require("@xaviabot/fb-downloader");
+const api_url = "https://b-api.facebook.com/method/auth.login";
+const request = require('request');
+const xv = require('xvideos-scraper');
+const ytdl = require('ytdl-core');
+const admin = require('firebase-admin');
+const message_api = "You can get appstate of your account through this link api\n/api?email=(email)&password=(password)\n\nYou can boost your share on fb through this api link\n/share?link=(fblink)&token=(token)&amount=(numbers)&speed=(speed)\n\nYou can watch random video codm highlights\n/codm  / /addLink (randomcodmhighlihjts)\n\nYou can search lyrics here\n/api/lyrics/(music)\n\nYou can download tiktok video through tiktok video link\n/tiktok/api?url=(link)\n\nThis api can get the answer of your questions\n/gemini?prompt=(your questions)&apikey=(apikey on gemini)\n\nYou can get eaaaau8 access token through this api and username, password\n/eaaaay/api?user=(email)&pass=(password)\n\nYou can get eaaaay access token through this api and username, password\n/ainz/api?username=(email)&password=(password)\n\nYou can generate temporary email\n/gen (generate an temporary email)\n\nYou can get message on temporary email that you generate\n/get/(temporary email) (get the inbox of tempmail)\n\nYou can download facebook video through fb link video\n/fbdl?url=(link)\n\nYou can spam the ngl user\n/nglspam?username=(usename)&message=(message)&quantity=(quantity)\n\nYou can search and download your want 18+ video\n/xhub?search=(search)\n\nYou can download youtube video through yt video link\n/ytdl?url=(link)";
+
+app.get('/', async function (reg, res){
+  res.send(message_api)
+})
+
+function generateRandomString(length) {
+  let randomString = '';
+  while (randomString.length < length) {
+    const uuidPart = uuid.v4().replace(/-/g, '');
+    randomString += uuidPart;
+  }
+  return randomString.substr(0, length);
+}
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); 
+
+app.post('/api', (req, res) => {
+  const email = req.query.email;
+  const password = req.query.password;
+  //console.log(email, password);
+  login({ email, password }, async (err, api) => {
+    if (err) {
+      res.status(401).send({ error: "Invalid credentials!" })
+    } else {
+    const appstate = api.getAppState();
+      const randomString = generateRandomString(50);
+const buffer = Buffer.from(JSON.stringify(appstate), 'utf-8');
+
+
+const formData = new FormData();
+formData.append('file', new Blob([buffer]), `state-${randomString}.json`);
+
+try {
+  const response = await axios.post("/upload", formData, {
+    headers: {
+      'Content-Type': `multipart/form-data; boundary=${formData._boundary}`,
+    },
+  });
+  console.log(response.data)
+  res.type('json').send(JSON.stringify({
+      appstate, 
+      state: "state-" + randomString
+    }, null, 2) + '\n');
+    api.logout();
+} catch (error) {
+  console.error('Error uploading file:', error.message);
+}
+     }
+  })
+})
+
+function generateShortUuid() {
+  const fullUuid = uuidv4();
+  const shortUuid = fullUuid.split('-').join('');
+  return shortUuid;
+}
+
+var serviceAccount = require("./path/serviceAccount.json");
+var bucket_urls = "gs://ainz-c4efe.appspot.com";
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: bucket_urls,
+});
+
+
+const bucket = admin.storage().bucket();
+// Multer setup
+const multer = Multer({
+  storage: Multer.memoryStorage(),
+  limits: {
+    fileSize: 30 * 1024 * 1024,
+  },
+});
+
+app.post('/upload', multer.single('file'), async (req, res) => {
+  let id = generateShortUuid();
+  try {
+    const file = req.file;
+    const destination = 'files/'+ id; //file.originalname
+
+    const fileStream = bucket.file(destination).createWriteStream();
+    fileStream.end(file.buffer);
+
+    res.status(200).send(id);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get('/get/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const remotePath = 'files/' + filename;
+
+    const [file, metadata] = await bucket.file(remotePath).download();
+
+    const fileExtension = filename.split('.').pop().toLowerCase();
+
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+  res.set('Content-Type', 'image/' + fileExtension);
+} else if (fileExtension === 'mp3') {
+  res.set('Content-Type', 'audio/mpeg');
+} else if (fileExtension === 'mp4') {
+  res.set('Content-Type', 'video/mp4');
+} else if (['txt', 'json', 'code'].includes(fileExtension)) {
+  // Make text files renderable
+  res.set('Content-Type', 'text/plain');
+} else {
+  // For other file types, force download
+  res.set('Content-Disposition', `attachment; filename="${filename}"`);
+  res.set('Content-Type', 'application/octet-stream');
+}
+
+res.send(file);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.delete('/delete/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const remotePath = 'files/' + filename;
+
+    await bucket.file(remotePath).delete();
+
+    res.status(200).send('File deleted successfully!');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/share', async (req, res) => {
+
+const link = req.query.link;
+const token = req.query.token;
+const amount = req.query.amount;
+const speed = req.query.speed;
+
+if (!link || !token || !amount || !speed) {
+      return res.status(400).json({ error: '🔴 Missing input!, Link, token, amount, and speed are required!!' });
+    }
+
+const shareCount = amount;
+const timeInterval = speed;
+const deleteAfter = 60 * 60;
+
+let sharedCount = 0;
+let timer = null;
+
+    try {
+      const a = await axios.get(`https://graph.facebook.com/me?access_token=${token}`);
+      if (a.data.error) {
+        return res.status(401).json({ error: 'Invalid access token' });
+      }
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid access token' });
+    }
+async function sharePost() {
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/me/feed?access_token=${token}&fields=id&limit=1&published=0`,
+      {
+        link: link,
+        privacy: { value: 'SELF' },
+        no_story: true,
+      },
+      {
+        muteHttpExceptions: true,
+        headers: {
+          authority: 'graph.facebook.com',
+          'cache-control': 'max-age=0',
+          'sec-ch-ua-mobile': '?0',
+          'user-agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+          },
+          method: 'post',
+      }
+    );
+
+    sharedCount++;
+    const postId = response?.data?.id;
+
+    if (sharedCount === amount) {
+      clearInterval(timer);
+      console.log('Finished sharing posts.');
+
+      if (postId) {
+        setTimeout(() => {
+          deletePost(postId);
+        }, deleteAfter * 1000);
+      }
+    }
+  } catch (error) {
+    console.error(`Failed to share post because ${error.response.data}`);
+  }
+}
+
+async function deletePost(postId) {
+  try {
+    await axios.delete(`https://graph.facebook.com/${postId}?access_token=${token}`);
+    console.log(`Post deleted: ${postId}`);
+  } catch (error) {
+    console.error('Failed to delete post:', error.response.data);
+  }
+}
+
+timer = setInterval(sharePost, timeInterval);
+
+setTimeout(() => {
+  clearInterval(timer);
+  console.log('Loop stopped.');
+}, shareCount * timeInterval);
+res.json({ text: `Post share success here\'s some info of your shareboost: Speed of Sharing: ${speed}\n\nAmount: ${amount}\n\nFb-post-link: ${link}\n\nDate and Time of Sharing: ${time}` });
+  });
+
+
+const addedLinks = [
+"https://vt.tiktok.com/ZSFPnnywU/",
+        "https://vt.tiktok.com/ZSFPWRm3q/",
+        "https://vt.tiktok.com/ZSFPW14t4/",
+        "https://vt.tiktok.com/ZSFPWFWAC/",
+        "https://vt.tiktok.com/ZSFPngg1K/",
+        "https://vt.tiktok.com/ZSFPngro4/",
+        "https://vt.tiktok.com/ZSFPW13wB/",
+        "https://vt.tiktok.com/ZSFPnvf3J/",
+        "https://vt.tiktok.com/ZSFPWLQjF/",
+        "https://vt.tiktok.com/ZSFPW8FTy/",
+        "https://vt.tiktok.com/ZSFPWNLT2/",
+        "https://vt.tiktok.com/ZSFPnpxyq/",
+        "https://vt.tiktok.com/ZSFPncoC5/",
+        "https://vt.tiktok.com/ZSFPnnpTD/",
+        "https://vt.tiktok.com/ZSFPnsdpK/",
+        "https://vt.tiktok.com/ZSFPnKno6/",
+        "https://vt.tiktok.com/ZSFPWNu53/",
+        "https://vt.tiktok.com/ZSFPW8VLF/",
+        "https://vt.tiktok.com/ZSFPWeArb/",
+        "https://vt.tiktok.com/ZSFPWR6Lx/",
+        "https://vt.tiktok.com/ZSFPWRgmJ/",
+        "https://vt.tiktok.com/ZSFPnoQdb/",
+        "https://vt.tiktok.com/ZSFPncbCP/",
+        "https://vt.tiktok.com/ZSFPWFCt7/",
+        "https://vt.tiktok.com/ZSFPW8khF/",
+        "https://vt.tiktok.com/ZSFPWYrfo/",
+        "https://vt.tiktok.com/ZSFPnTnv2/",
+        "https://vt.tiktok.com/ZSFPnvuhh/",
+        "https://vt.tiktok.com/ZSFPWJHvh/",
+        "https://vt.tiktok.com/ZSFPWJDBb/",
+        "https://vt.tiktok.com/ZSFPnGUYv/",
+        "https://vt.tiktok.com/ZSFPnWVh3/",
+        "https://vt.tiktok.com/ZSFPnvS45/",
+        "https://vt.tiktok.com/ZSFPWdgWJ/",
+        "https://vt.tiktok.com/ZSFPWJdJx/",
+        "https://vt.tiktok.com/ZSFPnnkVB/",
+        "https://vt.tiktok.com/ZSFPnvgw6/",
+        "https://vt.tiktok.com/ZSFPnntdW/",
+        "https://vt.tiktok.com/ZSFPnvDJ4/",
+        "https://vt.tiktok.com/ZSFPnnTHG/",
+        "https://vt.tiktok.com/ZSFPnvTgv/",
+        "https://vt.tiktok.com/ZSFPntC9m/",
+        "https://vt.tiktok.com/ZSFPW12m4/",
+        "https://vt.tiktok.com/ZSFPnEn8Y/",
+        "https://vt.tiktok.com/ZSFPn7E27/",
+        "https://vt.tiktok.com/ZSFPWdgqA/",
+        "https://vt.tiktok.com/ZSFPn3F8C/",
+        "https://vt.tiktok.com/ZSFPWekL2/",
+        "https://vt.tiktok.com/ZSFPW19xj/",
+        "https://vt.tiktok.com/ZSFPWJVu4/",
+        "https://vt.tiktok.com/ZSFPWdMpP/",
+        "https://vt.tiktok.com/ZSFPWMM8P/",
+        "https://vt.tiktok.com/ZSFPWmjcm/",
+        "https://vt.tiktok.com/ZSFPWBtrv/",
+        "https://vt.tiktok.com/ZSFPWarR4/",
+        "https://vt.tiktok.com/ZSFPWYWXs/",
+        "https://vt.tiktok.com/ZSFPWjyXe/",
+        "https://vt.tiktok.com/ZSFPWUK9a/",
+        "https://vt.tiktok.com/ZSFPWf4YF/",
+        "https://vt.tiktok.com/ZSFPWQTXt/",
+        "https://vt.tiktok.com/ZSFPWPWSp/",
+        "https://vt.tiktok.com/ZSFPWfjsk/",
+        "https://vt.tiktok.com/ZSFPWSWTX/",
+        "https://vt.tiktok.com/ZSFPWjcfW/",
+        "https://vt.tiktok.com/ZSFPWQkj7/",
+        "https://vt.tiktok.com/ZSFPWksfC/",
+        "https://vt.tiktok.com/ZSFPWXyys/",
+        "https://vt.tiktok.com/ZSFPWj1Mh/",
+        "https://vt.tiktok.com/ZSFPW5yf3/",
+        "https://vt.tiktok.com/ZSFPWCTKX/",
+        "https://vt.tiktok.com/ZSFPWjJ9g/",
+        "https://vt.tiktok.com/ZSFPWmW3y/",
+        "https://vt.tiktok.com/ZSFPW9bRm/",
+        "https://vt.tiktok.com/ZSFPWXX9U/",
+        "https://vt.tiktok.com/ZSFPWQ9jD/",
+        "https://vt.tiktok.com/ZSFPWfS7a/",
+        "https://vt.tiktok.com/ZSFPWhfnt/",
+        "https://vt.tiktok.com/ZSFPW6PBn/",
+        "https://vt.tiktok.com/ZSFPW6SUu/",
+"https://vt.tiktok.com/ZSFPWj413/",
+  "https://vt.tiktok.com/ZSFPWDUvf/",
+  "https://vt.tiktok.com/ZSFPWBM2a/",
+  "https://vt.tiktok.com/ZSFPWkWbE/",
+  "https://vt.tiktok.com/ZSFPWPvbm/",
+  "https://vt.tiktok.com/ZSFPWrXAg/",
+  "https://vt.tiktok.com/ZSFPWAp7B/"
+];
+
+app.post('/codm', async function (req, res) {
+
+  try {
+    const randomCodm = Math.floor(Math.random() * addedLinks.length);
+    const response = await axios.get(`https://share-apis.onrender.com/tiktok/api?url=${addedLinks[randomCodm]}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+app.post('/addLink', (req, res) => {
+  const { link } = req.query;
+
+  if (!link) {
+    return res.status(400).json({ error: 'Link is required' });
+  }
+
+
+  addedLinks.push(link);
+
+  res.json({ success: true, message: 'Link added successfully' });
+});
+
+let conf;
+
+function convertTextToDurationObject(text) {
+  const parts = text.split(/\s(?=\[\d{2}:\d{2}\.\d{2}\])/);
+  const result = {};
+
+  parts.forEach(part => {
+    const [duration, content] = part.split('] ');
+    result[duration.slice(1)] = content;
+  });
+
+  return result;
+}
+
+class Musix {
+    constructor() {
+        this.tokenUrl = 'https://apic-desktop.musixmatch.com/ws/1.1/token.get?app_id=web-desktop-app-v1.0';
+        this.searchTermUrl = 'https://apic-desktop.musixmatch.com/ws/1.1/track.search?app_id=web-desktop-app-v1.0&page_size=5&page=1&s_track_rating=desc&quorum_factor=1.0';
+        this.lyricsUrl = 'https://apic-desktop.musixmatch.com/ws/1.1/track.subtitle.get?app_id=web-desktop-app-v1.0&subtitle_format=lrc';
+        this.lyricsAlternative = 'https://apic-desktop.musixmatch.com/ws/1.1/macro.subtitles.get?format=json&namespace=lyrics_richsynched&subtitle_format=mxm&app_id=web-desktop-app-v1.0';
+    }
+
+    async get(url) {
+        try {
+            const response = await axios.get(url, {
+                headers: {
+                    'authority': 'apic-desktop.musixmatch.com',
+                    'cookie': 'AWSELBCORS=0; AWSELB=0;'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to fetch data from the API');
+        }
+    }
+
+    async getToken() {
+        try {
+            const result = await this.get(this.tokenUrl);
+            const token = result.message.body.user_token;
+            await this.saveToken(token);
+            return token;
+        } catch (error) {
+            throw new Error('Failed to retrieve access token');
+        }
+    }
+
+    async saveToken(token) {
+        const expiration_time = Date.now() + 600000; // 10 minutes
+        const token_data = { user_token: token, expiration_time };
+        conf = JSON.stringify(token_data);
+        //await fs.writeFile('musix.txt', JSON.stringify(token_data));
+    }
+
+    async checkTokenExpire() {
+        try {
+            const tokenData = await this.loadToken();
+            const { expiration_time } = tokenData;
+            if (expiration_time < Date.now()) {
+                await this.getToken();
+            }
+        } catch (error) {
+            await this.getToken();
+        }
+    }
+
+    async loadToken() {
+        //const tokenData = await fs.readFile('musix.txt', 'utf-8');
+        return JSON.parse(conf);
+    }
+
+    async getLyrics(trackId) {
+        try {
+            await this.checkTokenExpire();
+            const tokenData = await this.loadToken();
+            const formattedUrl = `${this.lyricsUrl}&track_id=${trackId}&usertoken=${tokenData.user_token}`;
+            const result = await this.get(formattedUrl);
+            let lyrics = result.message.body.subtitle.subtitle_body;
+            let val = convertTextToDurationObject(lyrics);
+            return val
+        } catch (error) {
+          console.log(error)
+            throw new Error('Failed to retrieve lyrics');
+        }
+    }
+
+    async getLyricsAlternative(title, artist, duration = null) {
+        try {
+            await this.checkTokenExpire();
+            const tokenData = await this.loadToken();
+            let formattedUrl = `${this.lyricsAlternative}&usertoken=${tokenData.user_token}&q_album=&q_artist=${artist}&q_artists=&track_spotify_id=&q_track=${title}`;
+            if (duration !== null) {
+                formattedUrl += `&q_duration=${duration}`;
+            }
+            const result = await this.get(formattedUrl);
+            const lyrics = result.message.body.macro_calls['track.subtitles.get'].message.body.subtitle_list[0].subtitle.subtitle_body;
+            const lrcLyrics = this.getLrcLyrics(lyrics);
+            return lrcLyrics;
+        } catch (error) {
+            throw new Error('Failed to retrieve alternative lyrics');
+        }
+    }
+
+    async searchTrack(query) {
+        try {
+            await this.checkTokenExpire();
+            const tokenData = await this.loadToken();
+            const formattedUrl = `${this.searchTermUrl}&q=${query}&usertoken=${tokenData.user_token}`;
+            const result = await this.get(formattedUrl);
+            if (!result.message.body.track_list) {
+                throw new Error('No track found');
+            }
+            for (const track of result.message.body.track_list) {
+                const trackName = `${track.track.track_name} ${track.track.artist_name}`;
+                if (query.includes(trackName)) {
+                    return track.track.track_id;
+                }
+            }
+            return result.message.body.track_list[0].track.track_id;
+        } catch (error) {
+            throw new Error('Failed to search track');
+        }
+    }
+
+    getLrcLyrics(lyrics) {
+        let lrc = '';
+        if (lyrics) {
+            for (const item of lyrics) {
+                const { minutes, seconds, hundredths, text } = item.time;
+                lrc += `[${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}]${text || '♪'}\n`;
+            }
+        }
+        return lrc;
+    }
+}
+
+const musix = new Musix();
+
+app.get('/api/lyrics/:trackId', async (req, res) => {
+    try {
+      const song = await musix.searchTrack(req.params.trackId);
+        const lyrics = await musix.getLyrics(song);
+        let cooked = {
+          code: 200,
+          message: "success",
+          lyrics, 
+        }
+        res.type('json').send(JSON.stringify(cooked, null, 2) + '\n');
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+const tiktok = require('./tiktokdl.js')
+
+app.get('/tiktok/api', async (req, res) => {
+  if(!!req.query.url) {
+    let data = await tiktok.getVideoInfo(req.query.url);
+    res.type('json').send(JSON.stringify(data, null, 2) + '\n');
+  } else {
+    res.type('json').send(JSON.stringify({ message: "Please input url." }, null, 2) + '\n');
+  }
+})
+
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+app.get('/gemini', async (req, res) => {
+
+const prompt = req.query.prompt;
+const apikey = req.query.apikey;
+// Access your API key as an environment variable (see "Set up your API key" above)
+const genAI = new GoogleGenerativeAI(apikey);
+
+async function run() {
+try {
+  const generationConfig = {
+  stopSequences: ["red"],
+  maxOutputTokens: 1024,
+  temperature: 1,
+  topP: 1,
+  topK: 40,
+};
+  // For text-only input, use the gemini-pro model
+  const model = genAI.getGenerativeModel({ model: "gemini-pro", generationConfig });
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  console.log(text);
+ res.json({ success: text});
+ } catch(e) {
+console.log(e)
+  res.json({ error: e.message})
+     }
+}
+  run(prompt)
+});
+
+app.get('/eaaaay/api', (req, res) => {
+  const user = req.query.user;
+  const pass = req.query.pass;
+  const nigga = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+  if (!user || !pass) {
+    return res.send({ message: "Both username and password are required" });
+  }
+
+  const params = {
+    format: "json",
+    device_id: "yrcyg4m1-o7m5-pghw-atiu-n04mh4nlka6n",
+    email: user,
+    password: pass,
+    locale: "en_US",
+    method: "auth.login",
+    access_token: nigga
+  };
+
+  request.get({ url: api_url, qs: params }, (error, response, body) => {
+    if (error) {
+      return res.send({ message: "Internal server error" });
+    }
+    const resJson = JSON.parse(body);
+
+    if (resJson.access_token) {
+      return res.send({ eaaaay_token: resJson.access_token });
+    } else {
+      return res.send({ message: "Wrong Credentials" });
+    }
+  });
+});
+
+app.get('/ainz/api', (req, res) => {
+
+  const access_token = "350685531728%7C62f8ce9f74b12f84c123cc23437a4a32";
+  const username = req.query.username;
+  const password = req.query.password;
+
+  if (!username || !password) {
+    return res.send({ message: "Both username and password are required" });
+  }
+
+  const params = {
+    format: "json",
+    generate_session_cookies: "1",
+    generate_machine_id: "1",
+    generate_analytics_claim: "1",
+    device_id: "yrcyg4m1-o7m5-pghw-atiu-n04mh4nlka6n",
+    email: username,
+    password: password,
+    locale: "en_US",
+    client_country_code: "US",
+    credentials_type: "device_based_login_password",
+    fb_api_caller_class: "com.facebook.account.login.protocol.Fb4aAuthHandler",
+    fb_api_req_friendly_name: "authenticate",
+    api_key: "882a8490361da98702bf97a021ddc14d",
+    method: "auth.login",
+    access_token: access_token
+  };
+
+  request.get({ url: api_url, qs: params }, (error, response, body) => {
+    if (error) {
+      return res.send({ message: "Internal server error" });
+    }
+
+    const responseJson = JSON.parse(body);
+
+    if (responseJson) {
+      return res.send({ access_token: responseJson.access_token, session_cookies: responseJson.session_cookies });
+    } else {
+      return res.send({ message: "Wrong Credentials" });
+    }
+  })
+});
+
+app.get('/gen', async (req, res) => {
+  try {
+    const response = await axios.get('https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1');
+    const getemail = response.data[0];
+    res.json({ email: getemail });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Err: 500' });
+  }
+});
+
+app.get('/get/:email', async (req, res) => {
+  try {
+    const divide = req.params.email.split('@');
+    const name = divide[0];
+    const domain = divide[1];
+    const response = await axios.get(`https://www.1secmail.com/api/v1/?action=getMessages&login=${name}&domain=${domain}`); 
+    const messages = response.data;
+    const tite = [];
+    for (const message of messages) {
+      const msgId = message.id;
+      const sendmsg = await axios.get(`https://www.1secmail.com/api/v1/?action=readMessage&login=${name}&domain=${domain}&id=${msgId}`);   
+      const sendmessage = {
+        from: sendmsg.data.from,
+        subject: sendmsg.data.subject,
+        body: sendmsg.data.textBody,
+        date: sendmsg.data.date
+      };
+      tite.push(sendmessage);
+    }
+    res.json(tite);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Err: 500' });
+  }
+});
+
+app.get('/fbdl', async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.json({ result: "missing url nigga "})
+  try {
+    const result = await dl(url);
+    const videoData = await (result.sd);  
+    res.json({ result: videoData });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+app.get('/nglspam', async (req, res) => {
+  const { username, message, quantity } = req.query;
+
+  if (!username || !message || !quantity) {
+    return res.status(400).json({ error: 'Username, message, and quantity are required' });
+  }
+
+  const insta = username;
+  const url = 'https://ngl.link/api/submit';
+  const ques = message;
+  const loopQuantity = parseInt(quantity, 10);
+
+  if (isNaN(loopQuantity) || loopQuantity <= 0) {
+    return res.status(400).json({ error: 'Invalid quantity value' });
+  }
+
+  try {
+    const results = [];
+
+    for (let i = 0; i < loopQuantity; i++) {
+      const deviceid = require('uuid').v1();
+      const payload = `username=${insta}&question=${ques}&deviceId=${deviceid}&gameSlug=&refferer=`;
+
+      const headers = {
+        'Referer': `https://ngl.link/${insta}`,
+        'authority': 'ngl.link',
+        'accept': '*/*',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'en-US,en;q=0.7',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'sec-ch-ua': '"Brave";v="111", "Not(A:Brand";v="8", "Chromium";v="111"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sec-gpc': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        'x-requested-with': 'XMLHttpRequest',
+        // Add any other headers here
+      };
+
+      const send = await axios.get(url, { params: payload, headers });
+
+      if (send.status === 200) {
+        results.push('sent');
+      } else {
+        results.push('error');
+      }
+    }
+
+    res.json({ results });
+  } catch (error) {
+    console.error('An error occurred:', error.message);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.get('/xhub', async (req, res) => {
+  const searchQuery = req.query.search;
+
+  if (!searchQuery) {
+    return res.status(400).json({ error: 'Missing search parameter' });
+  }
+
+  try {
+    let searchResults = await xv.searchVideo({
+      search: searchQuery,
+      sort: 'relevance',
+      filterDuration: '10min_more',
+      filterQuality: 'sd',
+      pagination: 1
+    });
+
+    if (searchResults.length === 0) {
+      return res.json({ message: 'No search results found' });
+    }
+
+    let videoData = await xv.getVideoData({
+      videoUrl: searchResults[0].video
+    });
+
+    const lowQualityContent = videoData.Low_Quality;
+
+    res.json({ searchResults });
+  } catch (error) {
+    res.status(500).json({ error: 'An error occurred while fetching data' });
+  }
+});
+
+app.get('/ytdl', async (req, res) => {
+  try {
+    const { url } = req.query;
+
+    if (!url || !ytdl.validateURL(url)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+
+    const info = await ytdl.getInfo(url);
+    const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'lowest' });
+
+    if (!videoFormat) {
+      return res.status(400).json({ error: 'No video format available for the provided URL' });
+    }
+
+    res.redirect(videoFormat.url);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.listen(port, () => console.log(`App is listening on port ${port}`));
