@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "1.20.2",
     "@google/generative-ai": "^0.3.1",
     "@types/node": "^18.0.6",
     "@xaviabot/fb-downloader": "^1.0.14",
