@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemBlanceGPT</title>
+  <title>Gemini AI</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-ZtMvTm3TIHSSBzoiGoHEa+lFeoIYWi+UUJvO7Wph0NrfWhBEtd+5uyzpDmI9/yeYXrGdHX4C6h32Jx3ax2sBbw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" type="image/x-icon" href="https://i.imgur.com/jnfrmbe.jpeg">
   <style>
@@ -170,11 +170,11 @@
 <body>
   <div class="header">
     <img src="https://i.imgur.com/jnfrmbe.jpeg" alt="Profile Image" class="profile-image">
-    <h1>SemBlance AI Buddy</h1>
+    <h1>Gemini AI</h1>
     <div class="header-links">
       <a href="about.html" class="header-link">About Us</a>
     </div>
-    <p>Made by <a href="https://www.facebook.com/cyril.pumdal">Cyril Encenso</a> and <a href="https://www.facebook.com/profile.php?id=100088690249020">API finder Joshua Apostol</a></p>
+    <p>Made by <a href="https://www.facebook.com/berlovesyou">Berwin</a> and <a href="https://www.facebook.com/berlovesyou">API Ain Developer</a></p>
   </div>
 
   <div class="container" id="container">
@@ -248,7 +248,7 @@
    
 async function getBotResponse(userInput) {
   let apikey = 'AIzaSyBp9HQ69tdYi2TEywbVNYeDZEln0W8BBf8';
-  let url = `https://uselessness-apis.onrender.com/gemini?prompt=${userInput}&apikey=${apikey}`;
+  let url = `/gemini?prompt=${userInput}&apikey=${apikey}`;
   let response = await fetch(url);
   if (!response.ok) {
     throw new Error('Network response was not ok');
