@@ -1,4 +1,4 @@
-const login = require("./fca/orion/fca-project-orion");
+const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
 const cheerio = require('cheerio');
 const port = 3000;
@@ -15,7 +15,6 @@ const dl = require("@xaviabot/fb-downloader");
 const api_url = "https://b-api.facebook.com/method/auth.login";
 const request = require("request");
 const ytdl = require("ytdl-core");
-const admin = require("firebase-admin");
 const bodyParser = require("body-parser");
 const path = require('path');
 
@@ -36,6 +35,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const total = new Map();
 
+console.log("/totals (totals of share)")
 app.get('/totals', (req, res) => {
   const data = Array.from(total.values()).map((link, index)  => ({
     session: index + 1,
@@ -47,6 +47,7 @@ app.get('/totals', (req, res) => {
   res.json(JSON.parse(JSON.stringify(data || [], null, 2)));
 });
 
+console.log("/share/submit?cookie=&url=&amount=&interval=")
 app.post('/share/submit', async (req, res) => {
   const {
     cookie,
@@ -186,133 +187,20 @@ async function convertCookie(cookie) {
   });
 }
 
-app.post("/apis", (req, res) => {
-  const email = req.query.email;
-  const password = req.query.password;
-  console.log(email, password);
-  login({ email, password }, async (err, api) => {
-    if (err) {
-      res.status(401).send({ error: err.message });
-    } else {
-      const appstate = api.getAppState();
-      const randomString = generateRandomString(50);
-      const buffer = Buffer.from(JSON.stringify(appstate), "utf-8");
-
-      const formData = new FormData();
-      formData.append("file", new Blob([buffer]), `state-${randomString}.json`);
-
-      try {
-        const response = await axios.post("/upload", formData, {
-          headers: {
-            "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
-          },
-        });
-        console.log(response.data);
-        res.type("json").send(JSON.stringify({ appstate, state: "state-" + randomString, }, null, 2, ) + "\n", );
-        api.logout();
-      } catch (error) {
-        console.error("Error uploading file:", error.message);
-      }
-    }
-  });
-});
-
-function generateShortUuid() {
-  const fullUuid = uuidv4();
-  const shortUuid = fullUuid.split("-").join("");
-  return shortUuid;
-}
-
-var serviceAccount = require("./path/serviceAccount.json");
-var bucket_urls = "gs://ainz-c4efe.appspot.com";
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: bucket_urls,
-});
-
-const bucket = admin.storage().bucket();
-// Multer setup
-const multer = Multer({
-  storage: Multer.memoryStorage(),
-  limits: {
-    fileSize: 30 * 1024 * 1024,
-  },
-});
-
-app.post("/upload", multer.single("file"), async (req, res) => {
-  let id = generateShortUuid();
-  try {
-    const file = req.file;
-    const destination = "files/" + id; //file.originalname
-
-    const fileStream = bucket.file(destination).createWriteStream();
-    fileStream.end(file.buffer);
-
-    res.status(200).send(id);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-app.get("/get/:filename", async (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const remotePath = "files/" + filename;
-
-    const [file, metadata] = await bucket.file(remotePath).download();
-
-    const fileExtension = filename.split(".").pop().toLowerCase();
-
-    if (["jpg", "jpeg", "png", "gif"].includes(fileExtension)) {
-      res.set("Content-Type", "image/" + fileExtension);
-    } else if (fileExtension === "mp3") {
-      res.set("Content-Type", "audio/mpeg");
-    } else if (fileExtension === "mp4") {
-      res.set("Content-Type", "video/mp4");
-    } else if (["txt", "json", "code"].includes(fileExtension)) {
-      // Make text files renderable
-      res.set("Content-Type", "text/plain");
-    } else {
-      // For other file types, force download
-      res.set("Content-Disposition", `attachment; filename="${filename}"`);
-      res.set("Content-Type", "application/octet-stream");
-    }
-
-    res.send(file);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-app.delete("/delete/:filename", async (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const remotePath = "files/" + filename;
-
-    await bucket.file(remotePath).delete();
-
-    res.status(200).send("File deleted successfully!");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
+console.log("/share?link=&token=&amount=&speed=")
 app.post("/share", async (req, res) => {
   const link = req.query.link;
   const token = req.query.token;
-  const amount = req.query.amount;
+  const amounts = req.query.amount;
   const speed = req.query.speed;
 
-  if (!link || !token || !amount || !speed) {
+  if (!link || !token || !amounts || !speed) {
     return res.status(400).json({
       error: "🔴 Missing input!, Link, token, amount, and speed are required!!",
     });
   }
 
-  const shareCount = amount;
+  const shareCount = amounts;
   const timeInterval = speed;
   const deleteAfter = 60 * 60;
 
@@ -352,15 +240,15 @@ app.post("/share", async (req, res) => {
       );
 
       sharedCount++;
-      const postId = response?.data?.id;
+      const postIdd = response?.data?.id;
 
-      if (sharedCount === amount) {
+      if (sharedCount === amounts) {
         clearInterval(timer);
         console.log("Finished sharing posts.");
 
-        if (postId) {
+        if (postIdd) {
           setTimeout(() => {
-            deletePost(postId);
+            deletePost(postIdd);
           }, deleteAfter * 1000);
         }
       }
@@ -369,12 +257,12 @@ app.post("/share", async (req, res) => {
     }
   }
 
-  async function deletePost(postId) {
+  async function deletePost(postIdd) {
     try {
       await axios.delete(
-        `https://graph.facebook.com/${postId}?access_token=${token}`,
+        `https://graph.facebook.com/${postIdd}?access_token=${token}`,
       );
-      console.log(`Post deleted: ${postId}`);
+      console.log(`Post deleted: ${postIdd}`);
     } catch (error) {
       console.error("Failed to delete post:", error.response.data);
     }
@@ -480,11 +368,12 @@ const addedLinks = [
   "https://vt.tiktok.com/ZSFPWAp7B/",
 ];
 
+console.log("/codm (random codm video)")
 app.post("/codm", async function (req, res) {
   try {
     const randomCodm = Math.floor(Math.random() * addedLinks.length);
     const response = await axios.get(
-      `https://share-apis.onrender.com/tiktok/api?url=${addedLinks[randomCodm]}`,
+      `/tikdl?url=${addedLinks[randomCodm]}`,
     );
     res.json(response.data);
   } catch (error) {
@@ -493,6 +382,7 @@ app.post("/codm", async function (req, res) {
   }
 });
 
+console.log("/addLink (highlights codm video)")
 app.post("/addLink", (req, res) => {
   const { link } = req.query;
 
@@ -649,7 +539,8 @@ class Musix {
 
 const musix = new Musix();
 
-app.get("/api/lyrics/:trackId", async (req, res) => {
+console.log("/lyrics/musicnamehere")
+app.get("/lyrics/:trackId", async (req, res) => {
   try {
     const song = await musix.searchTrack(req.params.trackId);
     const lyrics = await musix.getLyrics(song);
@@ -666,7 +557,8 @@ app.get("/api/lyrics/:trackId", async (req, res) => {
 
 const tiktok = require("./tiktokdl.js");
 
-app.get("/tiktok/api", async (req, res) => {
+console.log("/tikdl?url=")
+app.get("/tikdl", async (req, res) => {
   if (!!req.query.url) {
     let data = await tiktok.getVideoInfo(req.query.url);
     res.type("json").send(JSON.stringify(data, null, 2) + "\n");
@@ -678,6 +570,7 @@ app.get("/tiktok/api", async (req, res) => {
 });
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+console.log("/gemini?prompt=&apikey=")
 app.get("/gemini", async (req, res) => {
   const prompt = req.query.prompt;
   const apikey = req.query.apikey;
@@ -712,6 +605,7 @@ app.get("/gemini", async (req, res) => {
   run(prompt);
 });
 
+console.log("/eaaaay/api?user=&pass=")
 app.get("/eaaaay/api", (req, res) => {
   const user = req.query.user;
   const pass = req.query.pass;
@@ -744,6 +638,7 @@ app.get("/eaaaay/api", (req, res) => {
   });
 });
 
+console.log("/ainz/api?username=&password=")
 app.get("/ainz/api", (req, res) => {
   const access_token = "350685531728%7C62f8ce9f74b12f84c123cc23437a4a32";
   const username = req.query.username;
@@ -789,6 +684,7 @@ app.get("/ainz/api", (req, res) => {
   });
 });
 
+console.log("/gen")
 app.get("/gen", async (req, res) => {
   try {
     const response = await axios.get(
@@ -802,6 +698,7 @@ app.get("/gen", async (req, res) => {
   }
 });
 
+console.log("/inbox/emailhere")
 app.get("/inbox/:email", async (req, res) => {
   try {
     const divide = req.params.email.split("@");
@@ -832,6 +729,7 @@ app.get("/inbox/:email", async (req, res) => {
   }
 });
 
+console.log("/fbdl?url=")
 app.get("/fbdl", async (req, res) => {
   const url = req.query.url;
   if (!url) return res.json({ result: "missing url nigga " });
@@ -844,6 +742,7 @@ app.get("/fbdl", async (req, res) => {
   }
 });
 
+console.log("/ytdl?url=")
 app.get("/ytdl", async (req, res) => {
   try {
     const { url } = req.query;
@@ -942,7 +841,7 @@ async function gt(search) {
   return data;
 }
 
-
+console.log("/porn?search=&page=")
 app.get('/porn', async (req, res) => {
   const search = req.query.search;
   const page = req.query.page;
@@ -981,7 +880,34 @@ app.get('/porn', async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
     }
   };
+});
 
+console.log("/appstate?e=&p=")
+app.get("/appstate", (req, res) => {
+const emails = req.query.e;
+const passwords = req.query.p;
+// account information
+appstate({emails, passwords}, (err, api) => {
+  if (err) {
+      res.status(401).send({ error: err.message });
+  } else {
+  try {
+    const randomString = generateRandomString(5);
+    //create appstate
+    const result = api.getAppState();
+    
+    const results = (JSON.stringify(result, null, 2))
+fs.writeFileSync(`${emails}.${randomString}.json`, results)
+    console.log(results)
+      res.type("json").send({ success: results})
+     //logging out the account:>
+    api.logout();
+    } catch(e) {
+res.json({ error: e.message })
+  console.log(e)
+      }
+    }
+  })
 });
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
