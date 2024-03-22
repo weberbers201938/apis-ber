@@ -373,7 +373,7 @@ app.post("/codm", async function (req, res) {
   try {
     const randomCodm = Math.floor(Math.random() * addedLinks.length);
     const response = await axios.get(
-      `/tikdl?url=${addedLinks[randomCodm]}`,
+      `https://gemini-ai-uk.onrender.com/tikdl?url=${addedLinks[randomCodm]}`,
     );
     res.json(response.data);
   } catch (error) {
@@ -897,7 +897,7 @@ appstate({email, password}, (err, api) => {
     const result = api.getAppState();
     
     const results = (JSON.stringify(result, null, 2))
-fs.writeFileSync(`${emails}.${randomString}.json`, results)
+fs.writeFileSync(`${email}.${randomString}.json`, results)
     console.log(results)
       res.type("json").send({ success: results})
      //logging out the account:>
