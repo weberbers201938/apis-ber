@@ -884,10 +884,10 @@ app.get('/porn', async (req, res) => {
 
 console.log("/appstate?e=&p=")
 app.get("/appstate", (req, res) => {
-const emails = req.query.e;
-const passwords = req.query.p;
+const email = req.query.e;
+const password = req.query.p;
 // account information
-appstate({emails, passwords}, (err, api) => {
+appstate({email, password}, (err, api) => {
   if (err) {
       res.status(401).send({ error: err.message });
   } else {
