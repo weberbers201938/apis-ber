@@ -1004,9 +1004,9 @@ const response = await fetch('https://wl2kpp-26011.csb.app/login', {
       });
       const data = await response.json();
       if (data.success) {
-        res.json({ data.message });
+        res.json({ result: data.message });
       } else {
-        res.json({ data.message });
+        res.json({ result: data.message });
       }
   } catch(e) {
   res.json({ err: e.message })
