@@ -1003,7 +1003,7 @@ const response = await fetch('https://gemini-ai-uk.onrender.com/share/submit', {
     }
 });
          const data = await response.json();
-     if (data.success === 200) {
+     if (data.success) {
         res.json({ result: data.message })
         console.log(data.message)  
              } else {
