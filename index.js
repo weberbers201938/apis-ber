@@ -998,7 +998,7 @@ try {
         });
 
 
-  const api = (JSON.stringify(response));
+  const api = JSON.stringify(response)
       const data = await api.json();
       if (data.success) {
         res.json({ result: data.message });
