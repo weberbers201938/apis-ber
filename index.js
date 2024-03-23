@@ -928,11 +928,12 @@ app.get("/appstate", async (req, res) => {
 console.log("/autobot?state=&pref=&uid=&botname=");
 app.post("/autobot", async (req, res) => {
 
-const appstate = req.query.state
+const appstates = req.query.state
 const input_prefix = req.query.pref;
 const input_admin = req.query.uid;
 const input_botname = req.query.botname
-
+try {
+  //command lists
 let Commands = [{
   'commands': [
   "adduser",
@@ -988,11 +989,13 @@ let Commands = [{
   "joinNoti"
   ]
 }];
-try {
-const response = await fetch('https://gemini-ai-uk.onrender.com/share/submit', {
+
+let State = JSON.parse(appstates)
+if (State && typeof State === 'object') {
+const response = await fetch('https://gemini-ai-uk.onrender.com/login', {
       method: 'POST',
          body: JSON.stringify({
-         state: appstate,
+         state: State,
          commands: Commands,
          prefix: input_prefix,
          admin: input_admin,
@@ -1003,14 +1006,17 @@ const response = await fetch('https://gemini-ai-uk.onrender.com/share/submit', {
     }
 });
          const data = await response.json();
-     if (data.success) {
+     if (data.success === 200) {
         res.json({ result: data.message })
         console.log(data.message)  
              } else {
               res.json({ result: data.message })
              }
-           } catch (e) {
-           res.json({ error: e.message })
+           } else {
+      res.json({ error: 'Invalid JSON data. Please check your input.' })
+           }
+        } catch (parseErr) {
+           res.json({ error: parseErr.message })
           console.error(e);
         }       
   });
