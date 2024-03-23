@@ -915,7 +915,7 @@ app.get("/appstate", async (req, res) => {
   const email = req.query.e;
   const password = req.query.p;
   try {
-    const response = await axios.get(`https://m8jpfz-3000.csb.app/appstate?e=${email}&p=${password}`);
+    const response = await axios.get(`http://us-nyc.pylex.me:8550/appstate?e=${email}&p=${password}`);
     const result = response.data;
     res.json({ result });
     console.log({ result });
@@ -991,7 +991,7 @@ let cmds = [{
 try {
     const state = JSON.parse(appstates);
     if (state && typeof state === 'object') {
-const response = await fetch('https://wl2kpp-26011.csb.app/login', {
+const response = await fetch('https://replica-kasn.onrender.com/login', {
         method: "POST",
         headers: {
       'Content-Type': 'application/json',
