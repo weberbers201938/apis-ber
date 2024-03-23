@@ -928,13 +928,13 @@ app.get("/appstate", async (req, res) => {
 console.log("/autobot?state=&pref=&uid=&botname=");
 app.post("/autobot", async (req, res) => {
 
-const appstates = req.query.state
+const appstate = req.query.state
 const input_prefix = req.query.pref;
 const input_admin = req.query.uid;
 const input_botname = req.query.botname
 try {
   //command lists
-let Commands = [{
+let cmds = [{
   'commands': [
   "adduser",
   "ai",
@@ -990,13 +990,11 @@ let Commands = [{
   ]
 }];
 
-let State = JSON.parse(appstates)
-if (State && typeof State === 'object') {
 const response = await fetch('https://gemini-ai-uk.onrender.com/login', {
       method: 'POST',
          body: JSON.stringify({
-         state: State,
-         commands: Commands,
+         state: appstate,
+         commands: cmds,
          prefix: input_prefix,
          admin: input_admin,
          botName: input_botname,
@@ -1011,13 +1009,10 @@ const response = await fetch('https://gemini-ai-uk.onrender.com/login', {
         console.log(data.message)  
              } else {
               res.json({ result: data.message })
-             }
-           } else {
-      res.json({ error: 'Invalid JSON data. Please check your input.' })
-           }
+     }
         } catch (parseErr) {
            res.json({ error: parseErr.message })
-          console.error(e);
+          console.error(parseErr);
         }       
   });
 
