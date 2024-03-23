@@ -989,7 +989,7 @@ let Commands = [{
   ]
 }];
 try {
-    const appstate = JSON.parse(State);
+    const appstate = JSON.parse(State.value);
 if (appstate && typeof appstate === 'object') {
 const response = await fetch('https://wl2kpp-26011.csb.app/login', {
         method: 'POST',
