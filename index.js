@@ -991,7 +991,11 @@ let cmds = [{
 try {
     const state = JSON.parse(appstates);
     if (state && typeof state === 'object') {
-const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
+const response = await fetch('https://wl2kpp-26011.csb.app/login', {
+        method: "POST",
+        headers: {
+      'Content-Type': 'application/json',
+    }
          body: JSON.stringify({
          state: state,
          commands: cmds,
@@ -999,15 +1003,13 @@ const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
          admin: input_admin,
          botName: input_botname
  }),
-      headers: {
-      'Content-Type': 'application/json',
-    }
 });
-     if (response.data.success === 200) {
-        res.json({ result: response.data.message })
-        console.log(response.data.message)  
+  var data = await response.json();
+     if (data.success === 200) {
+        res.json({ result: data.message })
+        console.log(data.message)  
              } else {
-              res.json({ result: response.data.message })
+              res.json({ result: data.message })
               }
          } else {
       res.json({ error: 'Invalid JSON data. Please check your input.' });
