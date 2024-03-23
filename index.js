@@ -995,7 +995,7 @@ const response = await fetch('https://wl2kpp-26011.csb.app/login', {
         method: "POST",
         headers: {
       'Content-Type': 'application/json',
-    }
+    },
          body: JSON.stringify({
          state: state,
          commands: cmds,
