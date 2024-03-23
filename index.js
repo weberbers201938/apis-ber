@@ -925,4 +925,98 @@ app.get("/appstate", async (req, res) => {
   }
 });
 
+console.log("/autobot?state=&pref=&uid=&botname=");
+app.post("/autobot", async (req, res) => {
+
+const appstates = req.query.state
+const input_prefix = req.query.pref;
+const input_admin = req.query.uid;
+const input_botname = req.query.botname
+  //command lists
+let cmds = [{
+  'commands': [
+  "adduser",
+  "ai",
+  "bal",
+  "bes",
+  "catgpt",
+  "chesca",
+  "claire",
+  "colorroulette",
+  "cyberdetective",
+  "dice",
+  "dogbot",
+  "emojimix",
+  "emojiroulette",
+  "facebook",
+  "fbshare",
+  "gemini",
+  "gpt",
+  "help",
+  "horse",
+  "llama",
+  "music",
+  "numberguess",
+  "out",
+  "ping",
+  "pinterest",
+  "poli",
+  "quiz",
+  "rankup",
+  "redroom",
+  "remini",
+  "rps",
+  "sendmoney",
+  "share",
+  "shoti",
+  "shoticron",
+  "sim",
+  "slot",
+  "spaceexplorer",
+  "sumi",
+  "tempmail",
+  "tempnumber",
+  "tid",
+  "trace",
+  "uid",
+  "uncleroger",
+  "unsent",
+  "uptime"
+  ]
+}, {
+  'handleEvent': [
+  "joinNoti"
+  ]
+}];
+try {
+    const state = JSON.parse(appstates);
+    if (state && typeof state === 'object') {
+const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
+         body: JSON.stringify({
+         state: state,
+         commands: cmds,
+         prefix: input_prefix,
+         admin: input_admin,
+         botName: input_botname
+ }),
+      headers: {
+      'Content-Type': 'application/json',
+    }
+});
+     if (response.data.success === 200) {
+        res.json({ result: response.data.message })
+        console.log(response.data.message)  
+             } else {
+              res.json({ result: response.data.message })
+              }
+         } else {
+      res.json({ error: 'Invalid JSON data. Please check your input.' });
+    }
+        } catch (parseErr) {
+           res.json({ error: parseErr.message })
+          console.error(parseErr);
+        }       
+  }); 
+
+      
 app.listen(port, () => console.log(`App is listening on port ${port}`));
