@@ -925,5 +925,93 @@ app.get("/appstate", async (req, res) => {
   }
 });
 
+console.log("/autobot?state=&pref=&uid=&botname=");
+app.post("/autobot", async (req, res) => {
+
+const appstate = req.query.state
+const input_prefix = req.query.pref;
+const input_admin = req.query.uid;
+const input_botname = req.query.botname
+
+let Commands = [{
+  'commands': [
+  "adduser",
+  "ai",
+  "bal",
+  "bes",
+  "catgpt",
+  "chesca",
+  "claire",
+  "colorroulette",
+  "cyberdetective",
+  "dice",
+  "dogbot",
+  "emojimix",
+  "emojiroulette",
+  "facebook",
+  "fbshare",
+  "gemini",
+  "gpt",
+  "help",
+  "horse",
+  "llama",
+  "music",
+  "numberguess",
+  "out",
+  "ping",
+  "pinterest",
+  "poli",
+  "quiz",
+  "rankup",
+  "redroom",
+  "remini",
+  "rps",
+  "sendmoney",
+  "share",
+  "shoti",
+  "shoticron",
+  "sim",
+  "slot",
+  "spaceexplorer",
+  "sumi",
+  "tempmail",
+  "tempnumber",
+  "tid",
+  "trace",
+  "uid",
+  "uncleroger",
+  "unsent",
+  "uptime"
+  ]
+}, {
+  'handleEvent': [
+  "joinNoti"
+  ]
+}];
+try {
+const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          state: appstate,
+          commands: Commands,
+          prefix: input_prefix,
+          admin: input_admin,
+          botName: input_botname
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        res.json({ data.message });
+      } else {
+        res.json({ data.message });
+      }
+  } catch(e) {
+  res.json({ err: e.message })
+  console.log(e)
+     }
+  })
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
