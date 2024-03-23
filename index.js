@@ -928,7 +928,7 @@ app.get("/appstate", async (req, res) => {
 console.log("/autobot?state=&pref=&uid=&botname=");
 app.post("/autobot", async (req, res) => {
 
-const appstate = req.query.state
+const State = req.query.state
 const input_prefix = req.query.pref;
 const input_admin = req.query.uid;
 const input_botname = req.query.botname
@@ -989,6 +989,8 @@ let Commands = [{
   ]
 }];
 try {
+    const appstate = JSON.parse(State.value);
+if (appstate && typeof appstate === 'object') {
 const response = await fetch('https://wl2kpp-26011.csb.app/login', {
         method: 'POST',
         headers: {
@@ -1008,6 +1010,9 @@ const response = await fetch('https://wl2kpp-26011.csb.app/login', {
       } else {
         res.json({ result: data.message });
       }
+          } else {
+      res.json({ err: 'Invalid JSON data. Please check your input.' });
+    }
   } catch(e) {
   res.json({ err: e.message })
   console.log(e)
