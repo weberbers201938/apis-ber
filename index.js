@@ -990,25 +990,25 @@ let Commands = [{
 }];
 try {
     const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
-          state: appstate,
-          commands: Commands,
-          prefix: input_prefix,
-          admin: input_admin,
-          botName: input_botname
-        });
+ state: appstate,
+ commands: Commands,
+ prefix: input_prefix,
+ admin: input_admin,
+ botName: input_botname
+ });
 
 
-  const api = JSON.stringify(response)
-      const data = await api.json();
-      if (data.success) {
-        res.json({ result: data.message });
-      } else {
-        res.json({ result: data.message });
-      }
-  } catch(e) {
-  res.json({ err: e.message })
-  console.log(e)
-     }
-  })
+ const api = JSON.stringify(response)
+ const data = JSON.parse(api);
+ if (data.success) {
+ res.json({ result: data.message });
+ } else {
+ res.json({ result: data.message });
+ }
+ } catch(e) {
+ res.json({ err: e.message })
+ console.log(e)
+ }
+ })
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
