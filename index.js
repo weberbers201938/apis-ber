@@ -928,7 +928,7 @@ app.get("/appstate", async (req, res) => {
 console.log("/autobot?state=&pref=&uid=&botname=");
 app.post("/autobot", async (req, res) => {
 
-const State = req.query.state
+const appstate = req.query.state
 const input_prefix = req.query.pref;
 const input_admin = req.query.uid;
 const input_botname = req.query.botname
@@ -989,32 +989,30 @@ let Commands = [{
   ]
 }];
 try {
- const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
-  state: appstate,
-  commands: Commands,
-  prefix: input_prefix,
-  admin: input_admin,
-  botName: input_botname
+const response = await fetch('https://gemini-ai-uk.onrender.com/share/submit', {
+      method: 'POST',
+         body: JSON.stringify({
+         state: appstate,
+         commands: Commands,
+         prefix: input_prefix,
+         admin: input_admin,
+         botName: input_botname,
+ }),
+      headers: {
+      'Content-Type': 'application/json',
+    }
 });
-
-const api = JSON.stringify(response, (key, value) => {
-  if (key === 'res' || key === 'req') {
-    return undefined;
-  }
-  return value;
-}, 4);
-
-const data = JSON.parse(api);
-
-if (data.success) {
-  res.json({ result: data });
-} else {
-  res.json({ result: data });
-  }
-} catch(e) {
- res.json({ err: e.message });
- console.log(e)
- }
-})
+         const data = await response.json();
+     if (data.success === 200) {
+        res.json({ result: data.message })
+        console.log(data.message)  
+             } else {
+              res.json({ result: data.message })
+             }
+           } catch (e) {
+           res.json({ error: e.message })
+          console.error(e);
+        }       
+  });
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
