@@ -989,30 +989,22 @@ let Commands = [{
   ]
 }];
 try {
-    const appstate = JSON.parse(State.value);
-if (appstate && typeof appstate === 'object') {
-const response = await fetch('https://wl2kpp-26011.csb.app/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    const response = await axios.post('https://wl2kpp-26011.csb.app/login', {
           state: appstate,
           commands: Commands,
           prefix: input_prefix,
           admin: input_admin,
           botName: input_botname
-        }),
-      });
-      const data = await response.json();
+        });
+
+
+  const api = (JSON.stringify(response));
+      const data = await api.json();
       if (data.success) {
         res.json({ result: data.message });
       } else {
         res.json({ result: data.message });
       }
-          } else {
-      res.json({ err: 'Invalid JSON data. Please check your input.' });
-    }
   } catch(e) {
   res.json({ err: e.message })
   console.log(e)
