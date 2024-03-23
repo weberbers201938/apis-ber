@@ -998,8 +998,9 @@ try {
  });
 
 
- const api = JSON.stringify(response)
- const data = JSON.parse(api);
+ const api = (JSON.stringify(response, null, 4));
+const a = await api.json;
+ const data = JSON.parse(a);
  if (data.success) {
  res.json({ result: data.message });
  } else {
