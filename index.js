@@ -989,7 +989,7 @@ let Commands = [{
   ]
 }];
 try {
-const response = await fetch('/login', {
+const response = await fetch('https://wl2kpp-26011.csb.app/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
