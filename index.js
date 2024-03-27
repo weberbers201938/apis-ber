@@ -373,7 +373,7 @@ app.post("/codm", async function (req, res) {
   try {
     const randomCodm = Math.floor(Math.random() * addedLinks.length);
     const response = await axios.get(
-      `https://gemini-ai-uk.onrender.com/tikdl?url=${addedLinks[randomCodm]}`,
+      `https://unknown-apis.onrender.com/tikdl?url=${addedLinks[randomCodm]}`,
     );
     res.json(response.data);
   } catch (error) {
