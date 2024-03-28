@@ -987,7 +987,8 @@ app.post('/shield', async (req, res) => {
     );
 
    const Data = response.data;
-  res.json({ success: true, Data });
+  res.json({ success: true });
+    console.log(Data);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
