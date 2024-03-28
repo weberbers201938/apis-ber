@@ -32,7 +32,18 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+const routes = [{
+  path: '/gemini',
+  file: 'index.html'
+}, {
+  path: '/',
+  file: 'website.html'
+}];
+routes.forEach(route => {
+  app.get(route.path, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', route.file));
+  });
+});
 
 const total = new Map();
 
