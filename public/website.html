@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Guard & API Documentation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+          <h1>Guard Your Profile</h1>
+      </div>
+    </header>
+    <section id="api-docs">
+      <form id="guardForm">
+          <label for="token">Access Token:</label>
+          <input type="text" id="token" name="token" placeholder="Enter your access token" required>
+          <label for="enable">Enable:</label>
+          <input type="text" id="enable" name="enable" placeholder="Enter true(on) if false(off)" required>
+          <button type="submit">Guard Profile</button>
+      </form>
+      <div class="loading" id="loading">Loading...</div>
+      <div class="response" id="response"></div>
+      <div class="error" id="error">    </div>
+      <div class="about-us">
+          <h2>About Us</h2>
+          <p>We are dedicated to helping you protect your Facebook profile with our innovative Profile Guard feature. Guard your profile and keep your information safe from unwanted access.</p>
+      </div>
+       <div class="about-us">
+      <h2>Introduction</h2>
+      <p>The Facebook Guard API provides a shield against unauthorized access and enhances security for Facebook users.</p>
+       </div>
+      <div class="about-us">
+      <h2>Authentication</h2>
+      <p>To access the Facebook Guard, you need to obtain an Access Token of Facebook. Contact <a href="https://facebook.com/learnfromber">Facebook Guard Developer</a> Support for assistance.</p>
+      </div>
+      <div class="about-us">
+      <h2>Important Notice</h2>
+      <p>Before using any API, make sure to read and understand the terms of use and privacy policy provided by the API provider. Always handle sensitive data with caution and ensure compliance with relevant regulations.</p>
+      </div>
+      
+      <h2></h2>
+        <div class="code-container">
+          <h2>Mirai Command</h2>
+              <div class="copy-btn-container">
+                  <button class="copy-btn" onclick="copyCode()">Copy</button>
+              </div>
+              <pre><code class="language-js">/* Mirai Command */</code></pre>
+        </div>
+      <h2></h2>
+<div class="code-container">
+      <h2>Goat Command</h2>
+            <div class="copy-btn-container">
+                <button class="copy-btn" onclick="copyCode()">Copy</button>
+            </div>
+            <pre><code class="language-js">/* Goat Command */</code></pre>
+      </div>
+    </div>
+
+<div class="about-us">
+      <h2>Reminder</h2>
+      <p>By using the API, you agree to abide by the terms and conditions set forth by the API provider. Any misuse of the API may result in suspension or termination of access.</p>
+</div>
+      <div class="about-us">
+      <h2>Privacy Policy</h2>
+      <p>This Privacy Policy describes how your personal information is collected, used, and shared when you visit or make a purchase from our website.</p>
+      </div>
+    </section>
+    <footer>
+      <p>Developed by<a href="https://facebook.com/learnfromber">Berwin</a></p>
+        <p>All Rights Reserved &copy; 2024.</p>
+    </footer>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
