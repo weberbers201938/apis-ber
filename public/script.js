@@ -9,7 +9,7 @@ function copyCode() {
     alert('Code copied to clipboard!');
 }
 
-// GUARD PPROFIL
+// GUARD PROFILE
         document.getElementById("guardForm").addEventListener("submit", function(event) {
             event.preventDefault();
             const token = document.getElementById("token").value.trim();
@@ -25,7 +25,7 @@ function guardProfile(token, enable) {
             const loadingDiv = document.getElementById("loading");
             const responseDiv = document.getElementById("response");
             const errorDiv = document.getElementById("error");
-
+            const axios = require('axios');
             loadingDiv.style.display = "block";
             responseDiv.style.display = "none";
             errorDiv.style.display = "none";
