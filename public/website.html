@@ -333,7 +333,7 @@ function guardProfile(token, enable) {
             responseDiv.style.display = "none";
             errorDiv.style.display = "none";
 
-    axios.post(`https://unknown-apis.onrender.com/shield?token=${token}&enable=${enable}`)
+    axios.post(`/shield?token=${token}&enable=${enable}`)
         .then(response => {
             const responseData = response.data;
             responseDiv.innerHTML = JSON.stringify(responseData);
