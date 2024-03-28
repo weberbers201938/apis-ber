@@ -343,9 +343,9 @@ function guardProfile(token, enable) {
             responseDiv.style.display = "none";
             errorDiv.style.display = "none";
 
-            axios.post("/shield", { 
+            axios.post("https://profileguard-requestapi-ryodev.replit.app/guard", { 
                 token: token, 
-                enable: enable 
+                id: enable 
             })
             .then(response => {
                 const responseData = response.data;
