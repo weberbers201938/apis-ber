@@ -991,7 +991,7 @@ app.post('/shield', async (req, res) => {
     console.log(Data);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: error });
   }
 });
 
