@@ -1003,7 +1003,7 @@ async function getUserId(token) {
 app.get('/api/tiktok', async (req, res) => {
   try {
     const query = req.query.query;
-    const apiUrl = `https://apikz.onrender.com/api/tiksearch/tools?search=${query}`;
+    const apiUrl = `https://apikz.onrender.com/tiksearch?search=${query}`;
     const response = await axios.get(apiUrl);
     const videoUrl = response.data.data.videos[0];
     res.json({ videoUrl });
