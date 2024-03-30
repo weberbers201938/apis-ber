@@ -1,5 +1,6 @@
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
+const { spotify, spotifydl } = require('betabotz-tools');
 const cheerio = require('cheerio');
 const port = 3000;
 const qs = require('querystring');
