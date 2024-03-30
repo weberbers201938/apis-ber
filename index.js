@@ -1000,4 +1000,17 @@ async function getUserId(token) {
   }
 }
 
+app.get('/api/tiktok', async (req, res) => {
+  try {
+    const query = req.query.query;
+    const apiUrl = `https://eugene-restapis.replit.app/api/tiksearch/tools?search=${query}`;
+    const response = await axios.get(apiUrl);
+    const videoUrl = response.data.data.videos[0].play;
+    res.json({ videoUrl });
+  } catch (error) {
+    console.error('Error fetching TikTok data:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 app.listen(port, () => console.log(`App is listening on port ${port}`));
