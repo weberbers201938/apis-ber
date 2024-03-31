@@ -1,6 +1,6 @@
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
-const { spotify, spotifydl } = require('betabotz-tools');
+const { spotify, spotifydl, facebook } = require('betabotz-tools');
 const cheerio = require('cheerio');
 const port = 3000;
 const qs = require('querystring');
@@ -1044,5 +1044,22 @@ app.get('/spotifydl', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+app.get('/fb', async (req, res) => {
+  const url = req.query.url;
+
+  if (!url) {
+    return res.status(400).json({ error: 'URL parameter is required' });
+  }
+
+  try {
+    const results = await facebook(url);
+    return res.json(results);
+  } catch (error) {
+    console.error('Error fetching Facebook data:', error);
+    return res.status(500).json({ error: 'Failed to fetch Facebook data' });
+  }
+});
+
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
