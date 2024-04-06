@@ -1,6 +1,5 @@
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
-const { spotify, spotifydl, facebook } = require('betabotz-tools');
 const cheerio = require('cheerio');
 const port = 3000;
 const qs = require('querystring');
@@ -1013,53 +1012,5 @@ app.get('/api/tiktok', async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
-
-app.get('/spotifydl', async (req, res) => {
-    try {
-        const title = req.query.title;
-        if (!title) {
-            return res.status(400).json({ error: 'Missing title of the song' });
-        }
-
-        // Search for the song on Spotify
-        const resultTitle = await spotify(title);
-
-        // Check if the song is found
-        if (!resultTitle || !resultTitle.result || resultTitle.result.data.length === 0) {
-            return res.status(404).json({ error: 'Song not found' });
-        }
-
-        // Assuming the first result contains the URL of the song
-        const songUrl = resultTitle.result.data[0].url;
-
-        // Download the song
-        const downloadResult = await spotifydl(songUrl);
-
-        // Assuming downloadResult contains the downloaded song data
-        // Handle the downloaded song data (e.g., save to file, stream to response)
-        // For this example, let's assume we're just returning the URL
-        res.json({ downloadUrl: downloadResult });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-app.get('/fb', async (req, res) => {
-  const url = req.query.url;
-
-  if (!url) {
-    return res.status(400).json({ error: 'URL parameter is required' });
-  }
-
-  try {
-    const results = await facebook(url);
-    return res.json(results);
-  } catch (error) {
-    console.error('Error fetching Facebook data:', error);
-    return res.status(500).json({ error: 'Failed to fetch Facebook data' });
-  }
-});
-
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
