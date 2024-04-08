@@ -1,7 +1,9 @@
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
+const { facebook, spotify, spotifydl, remini } = require('betabotz-tools') 
 const cheerio = require('cheerio');
 const port = 8550;
+const snapsave = require('snapsave-downloader-itj');
 const qs = require('querystring');
 const cors = require("cors");
 const express = require("express");
@@ -12,7 +14,6 @@ const uuid = require("uuid");
 const { v4: uuidv4 } = require("uuid");
 const moment = require("moment-timezone");
 const time = moment.tz("Asia/Manila").format("DD/MM/YYYY || HH:mm:s");
-const dl = require("@xaviabot/fb-downloader");
 const api_url = "https://b-api.facebook.com/method/auth.login";
 const request = require("request");
 const ytdl = require("ytdl-core");
@@ -48,7 +49,7 @@ routes.forEach(route => {
 const total = new Map();
 
 console.log("/totals (totals of share)")
-app.get('/totals', (req, res) => {
+app.get('/total', (req, res) => {
   const data = Array.from(total.values()).map((link, index)  => ({
     session: index + 1,
     url: link.url,
@@ -60,7 +61,7 @@ app.get('/totals', (req, res) => {
 });
 
 console.log("/share/submit?cookie=&url=&amount=&interval=")
-app.post('/share/submit', async (req, res) => {
+app.post('/api/submit', async (req, res) => {
   const {
     cookie,
     url,
@@ -208,7 +209,7 @@ app.post("/share", async (req, res) => {
 
   if (!link || !token || !amounts || !speed) {
     return res.status(400).json({
-      error: "ðŸ”´ Missing input!, Link, token, amount, and speed are required!!",
+      error: "🔴 Missing input!, Link, token, amount, and speed are required!!",
     });
   }
 
@@ -220,7 +221,7 @@ app.post("/share", async (req, res) => {
   let timer = null;
 
   try {
-    const a = await axios.get(
+    const a = await axios.post(
       `https://graph.facebook.com/me?access_token=${token}`,
     );
     if (a.data.error) {
@@ -542,7 +543,7 @@ class Musix {
     if (lyrics) {
       for (const item of lyrics) {
         const { minutes, seconds, hundredths, text } = item.time;
-        lrc += `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}]${text || "â™ª"}\n`;
+        lrc += `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}]${text || "♪"}\n`;
       }
     }
     return lrc;
@@ -734,21 +735,8 @@ app.get("/inbox/:email", async (req, res) => {
   }
 });
 
-console.log("/fbdl?url=")
-app.get("/fbdl", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.json({ result: "missing url nigga " });
-  try {
-    const result = await dl(url);
-    const videoData = await result.sd;
-    res.json({ result: videoData });
-  } catch (e) {
-    res.json({ error: e.message });
-  }
-});
-
 console.log("/ytdl?url=")
-app.get("/ytdl", async (req, res) => {
+app.get("/api/ytdl", async (req, res) => {
   try {
     const { url } = req.query;
 
@@ -772,123 +760,8 @@ app.get("/ytdl", async (req, res) => {
   }
 });
 
-
-async function qt(page, search) {
-  try {
-    
-    const url = `https://pinayflix.me/page/${page}/?s=${search}`;
-    const res = await axios.get(url);
-    const $ = cheerio.load(res.data);
-
-    const data = [];
-
-    const promises = [];
-
-    $('#primary').find('a').each((i, element) => {
-      const val = $(element).attr('href');
-
-      if (val && val.startsWith('http')) {
-        promises.push(
-          axios.get(val).then((scr) => {
-            const links = cheerio.load(scr.data);
-
-            const title = links('title').text();
-            const img = links('meta[property="og:image"]').attr('content');
-            const embedURL = links('meta[itemprop="contentURL"]').attr('content');
-
-            if (img !== undefined) { 
-              data.push({ title, img, link: val, video: embedURL });
-            }
-          })
-        );
-      }
-    });
-
-    await Promise.all(promises);
-    return data;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
-
-async function gt(search) {
-  const url = `https://pinayflix.me/?search=${search}`;
-  const res = await axios.get(url);
-  const $ = cheerio.load(res.data);
-
-  const data = [];
-
-  const promises = $('#main > div.videos-list').map(async (i, e) => {
-    const tu = $(e).find('img');
-    const ur = $(e).find('a');
-
-    return Promise.all(
-      tu.map(async (rel, val) => {
-        const al = $(val).attr('alt');
-        const sr = $(val).attr('src');
-
-        if (ur[rel]) {
-          const oi = $(ur[rel]).attr('href');
-
-          if (oi) {
-            const response = await axios.get(oi);
-            const $$ = cheerio.load(response.data);
-            const embedURL = $$('meta[itemprop="contentURL"]').attr('content');
-            data.push({ title: al, img: sr, link: oi, video: embedURL });
-          }
-        }
-      })
-    );
-  }).get();
-
-  await Promise.all(promises);
-  return data;
-}
-
-console.log("/porn?search=&page=")
-app.get('/porn', async (req, res) => {
-  const search = req.query.search;
-  const page = req.query.page;
-
-  if (!search) {
-    res.status(400).json({ error: "Invalid parameters" });
-  } else {
-    try {
-      qt(1, search)
-      .then((data) => {
-        console.log(data);
-        const fk = JSON.stringify(data, null, 2);
-        res.status(200).set('Content-Type', 'application/json').end(fk);
-      })
-      .catch((e) => {
-        console.log(e);
-      });
-    
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  } 
-
-  if (page) {
-    try {
-      qt(page, search)
-        .then((data) => {
-          console.log(data);
-          const fk = JSON.stringify(data, null, 2);
-          res.status(200).set('Content-Type', 'application/json').end(fk);
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
-});
-
 console.log("/appstate?e=&p=")
-app.get('/appstate', (req, res) => {
+app.get('/api/appstate', (req, res) => {
   const email = req.query.e;
   const password = req.query.p;
 
@@ -924,7 +797,7 @@ fs.writeFileSync(`${email}.json`, password)
   });
 });
 
-app.post('/shield', async (req, res) => {
+app.post('/api/shield', async (req, res) => {
   try {
     const token = req.query.token;
     const enable = req.query.enable;
@@ -995,16 +868,214 @@ async function getUserId(token) {
 }
 
 app.get('/api/tiktok', async (req, res) => {
-  try {
-    const query = req.query.query;
-    const apiUrl = `https://apikz.onrender.com/tiksearch?search=${query}`;
-    const response = await axios.get(apiUrl);
-    const videoUrl = response.data.data.videos[0];
-    res.json({ videoUrl });
-  } catch (error) {
-    console.error('Error fetching TikTok data:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+const link = req.query.link;
+  if (!link) {
+    res.json({ error: "Please provide a TikTok video link." });
+  } else {
+    try {
+      const response = await axios.post("https://www.tikwm.com/api/?hd=1", {
+        url: link,
+      });
+      const username = response.data.data.author.unique_id;
+      const url = response.data.data.play;
+      const nickname = response.data.data.author.nickname;
+      const title = response.data.data.title;
+      const like = response.data.data.digg_count;
+      const comment = response.data.data.comment_count;
+const views = response.data.data.play_count;
+const uid = response.data.data.author.id;
+
+      res.json({
+        username: username,
+        nickname: nickname,
+        url: url,
+        title: title,
+        like: like,
+        comment: comment,
+        views: views,
+        uid: uid,
+      });
+      console.log(response.data);
+    } catch (error) {
+      // handle error
+      console.error(error);
+      res.status(500).send("An error occurred");
+    }
   }
+});
+
+app.get('/api/fbdl', async (req, res) => {
+try {
+        const URL = req.query.url;
+
+        if (!URL) {
+            return res.status(400).json({ error: "URL is required" });
+        }
+
+        const response = await snapsave(URL);
+        const results = await facebook(URL)
+        // Assuming snapsave returns the response you want to send
+        return res.json(response, results);
+    } catch (error) {
+        // Handle errors
+        console.error("Error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.get('/api/remini', async (req, res) => {
+try {
+    const inputImage = req.query.input;
+
+    if (!inputImage) {
+      return res.status(400).send({ error: "Missing input image URL" });
+    }
+
+    const result = await remini(inputImage);
+    const image = result.image_data;
+    const randomString = generateRandomString(5);
+    const filePath = path.join(__dirname, "cache", `remini.${randomString}.png`);
+
+    const response = await axios.get(image, { responseType: "arraybuffer" });
+    fs.writeFileSync(filePath, response.data);
+
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error("Error calling Remini API:", error.message);
+    res.status(error.response?.status || 500).send({
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+});
+
+app.get('/api/spotify', async (req, res) => {
+try {
+        const title = req.query.title;
+        if (!title) {
+            return res.status(400).json({ error: 'Missing title of the song' });
+        }
+
+        // Search for the song on Spotify
+        const resultTitle = await spotify(title);
+
+        // Check if the song is found
+        if (!resultTitle || !resultTitle.result || resultTitle.result.data.length === 0) {
+            return res.status(404).json({ error: 'Song not found' });
+        }
+
+        // Assuming the first result contains the URL of the song
+        const songUrl = resultTitle.result.data[0].url;
+
+        // Download the song
+        const downloadResult = await spotifydl(songUrl);
+
+        // Assuming downloadResult contains the downloaded song data
+        // Handle the downloaded song data (e.g., save to file, stream to response)
+        // For this example, let's assume we're just returning the URL
+        res.json({ downloadUrl: downloadResult });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/tiksearch', async (req, res) => {
+try {
+    const search = req.query.search;
+
+    if (!search) {
+      return res.json({ error: "Missing data to launch the program" });
+    }
+
+    const response = await axios.post("https://www.tikwm.com/api/feed/search", {
+      keywords: search,
+    });
+
+    const data = response.data;
+
+    if (data.data && data.data.videos && data.data.videos.length > 0) {
+      const randomIndex = Math.floor(Math.random() * data.data.videos.length);
+
+      const randomVideo = data.data.videos[randomIndex];
+
+      const result = {
+        code: 0,
+
+        msg: "success",
+
+        processed_time: 0.9624,
+
+        data: {
+          videos: [randomVideo],
+        },
+      };
+
+      return res.json(result);
+    } else {
+      return res.json({ error: "No videos found" });
+    }
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get('/api/tikstalk', async (req, res) => {
+var user = req.query.username;
+
+  if (!user) return res.json({ error: "missing user query!!" });
+
+  var axios = require("axios");
+
+  axios({
+    method: "post",
+
+    url: "https://www.tikwm.com/api/user/info?unique_id=@",
+
+    data: {
+      unique_id: user,
+    },
+  })
+    .then(function (response) {
+      var data = response.data.data;
+
+      console.log(data);
+
+      return res.json({
+        id: data.user.id,
+
+        nickname: data.user.uniqueId,
+
+        username: data.user.nickname,
+
+        avatarLarger: data.user.avatarLarger,
+
+        signature: data.user.signature,
+
+        secUid: data.user.secUid,
+
+        relation: data.user.relation,
+
+        bioLink: data.user.bioLink,
+
+        videoCount: data.stats.videoCount,
+
+        followingCount: data.stats.followingCount,
+
+        followerCount: data.stats.followerCount,
+
+        heartCount: data.stats.heartCount,
+
+        diggCount: data.stats.diggCount,
+      });
+    })
+
+    .catch(function (error) {
+      return res.json({ error });
+    });
 });
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
