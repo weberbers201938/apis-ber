@@ -559,20 +559,6 @@ app.get("/lyrics/:trackId", async (req, res) => {
   }
 });
 
-const tiktok = require("./tiktokdl.js");
-
-console.log("/tikdl?url=")
-app.get("/tikdl", async (req, res) => {
-  if (!!req.query.url) {
-    let data = await tiktok.getVideoInfo(req.query.url);
-    res.type("json").send(JSON.stringify(data, null, 2) + "\n");
-  } else {
-    res
-      .type("json")
-      .send(JSON.stringify({ message: "Please input url." }, null, 2) + "\n");
-  }
-});
-
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 console.log("/gemini?prompt=&apikey=")
 app.get("/gemini", async (req, res) => {
