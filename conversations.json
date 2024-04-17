@@ -1,0 +1,30 @@
+{
+  "user1": [
+    {
+      "role": "user",
+      "text": "Hello, I have 2 dogs in my house."
+    },
+    {
+      "role": "model",
+      "text": "Great to meet you. What would you like to know?"
+    },
+    {
+      "role": "user",
+      "text": "Can you tell me about dog training?"
+    },
+    {
+      "role": "model",
+      "text": "Sure! Here are some tips..."
+    }
+  ],
+  "user2": [
+    {
+      "role": "user",
+      "text": "Hi, I'm interested in learning Spanish."
+    },
+    {
+      "role": "model",
+      "text": "That's great! How can I assist you?"
+    }
+  ]
+}
