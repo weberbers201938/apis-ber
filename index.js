@@ -559,42 +559,6 @@ app.get("/lyrics/:trackId", async (req, res) => {
   }
 });
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-console.log("/gemini?prompt=&apikey=")
-app.get("/gemini", async (req, res) => {
-  const prompt = req.query.prompt;
-  const apikey = req.query.apikey;
-  // Access your API key as an environment variable (see "Set up your API key" above)
-  const genAI = new GoogleGenerativeAI(apikey);
-
-  async function run() {
-    try {
-      const generationConfig = {
-        stopSequences: ["red"],
-        maxOutputTokens: 1024,
-        temperature: 1,
-        topP: 1,
-        topK: 40,
-      };
-      // For text-only input, use the gemini-pro model
-      const model = genAI.getGenerativeModel({
-        model: "gemini-pro",
-        generationConfig,
-      });
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      console.log(text);
-      res.json({ success: text });
-    } catch (e) {
-      console.log(e);
-      res.json({ error: e.message });
-    }
-  }
-  run(prompt);
-});
-
 console.log("/eaaaay/api?user=&pass=")
 app.get("/eaaaay/api", (req, res) => {
   const user = req.query.user;
@@ -1084,4 +1048,72 @@ app.get('/free/diamonds/ml', async (req, res) => {
   }
 });
 
+console.log('/gemini?p=prompt=id');
+const genAI = new GoogleGenerativeAI('AIzaSyDjaw6e0Y7Y-EgOGUpv-ZJC1cpH_U7j47E');
+
+let conversations = {};
+
+// Async function to load conversations from JSON file
+const loadConversations = () => {
+  try {
+    const data = fs.readFileSync('conversations.json', 'utf8');
+    conversations = JSON.parse(data);
+  } catch (err) {
+    console.error("Error reading conversations file:", err);
+  }
+};
+
+// Async function to save conversations to JSON file
+const saveConversations = () => {
+  fs.writeFile('conversations.json', JSON.stringify(conversations), 'utf8', (err) => {
+    if (err) {
+      console.error("Error writing conversations file:", err);
+    } else {
+      console.log("Conversation saved successfully.");
+    }
+  });
+};
+
+// Load conversations when the server starts
+loadConversations();
+
+app.post('/gemini', async (req, res) => {
+  var base = req.query.p;
+  var uid = req.query.id
+  let prompt = base;
+  if (typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Prompt must be a string.' });
+  }
+
+  let conversation = conversations[uid];
+  if (!conversation) {
+    conversation = [];
+    conversations[uid] = conversation;
+  }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const chat = model.startChat({
+    history: conversation,
+    generationConfig: {
+      maxOutputTokens: 100,
+    },
+  });
+
+  try {
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    conversation.push({ role: "user", parts: [{ text: prompt }] });
+    conversation.push({ role: "model", parts: [{ text }] });
+
+    saveConversations();
+
+    res.json({ response: text });
+  } catch (error) {
+    console.error("Error sending message:", error);
+    res.status(500).json({ error: 'An error occurred while processing the message.' });
+  }
+});
+    
 app.listen(port, () => console.log(`App is listening on port ${port}`));
