@@ -4,6 +4,7 @@ const { facebook, spotify, spotifydl, remini } = require('betabotz-tools')
 const cheerio = require('cheerio');
 const port = 26011;
 const snapsave = require('snapsave-downloader-itj');
+const pornhub = require('@justalk/pornhub-api');
 const qs = require('querystring');
 const cors = require("cors");
 const express = require("express");
@@ -34,13 +35,13 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.get("/", async function (req, res) {
-res.sendFile(path.join(__dirname, '/public/index.html'));
+res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const total = new Map();
 
-console.log("/totals (totals of share)")
-app.get('/total', (req, res) => {
+console.log("api/totalshare (totals of share)")
+app.get('api/totalshare', (req, res) => {
   const data = Array.from(total.values()).map((link, index)  => ({
     session: index + 1,
     url: link.url,
@@ -200,7 +201,7 @@ app.post("/share", async (req, res) => {
 
   if (!link || !token || !amounts || !speed) {
     return res.status(400).json({
-      error: "ðŸ”´ Missing input!, Link, token, amount, and speed are required!!",
+      error: "Missing input!, Link, token, amount, and speed are required!!",
     });
   }
 
@@ -386,7 +387,7 @@ app.post("/codm", async function (req, res) {
   }
 });
 
-console.log("/addLink (highlights codm video)")
+console.log("/addLink?link=(url codm tiktoklink)")
 app.post("/addLink", (req, res) => {
   const { link } = req.query;
 
@@ -397,166 +398,6 @@ app.post("/addLink", (req, res) => {
   addedLinks.push(link);
 
   res.json({ success: true, message: "Link added successfully" });
-});
-
-let conf;
-
-function convertTextToDurationObject(text) {
-  const parts = text.split(/\s(?=\[\d{2}:\d{2}\.\d{2}\])/);
-  const result = {};
-
-  parts.forEach((part) => {
-    const [duration, content] = part.split("] ");
-    result[duration.slice(1)] = content;
-  });
-
-  return result;
-}
-
-class Musix {
-  constructor() {
-    this.tokenUrl =
-      "https://apic-desktop.musixmatch.com/ws/1.1/token.get?app_id=web-desktop-app-v1.0";
-    this.searchTermUrl =
-      "https://apic-desktop.musixmatch.com/ws/1.1/track.search?app_id=web-desktop-app-v1.0&page_size=5&page=1&s_track_rating=desc&quorum_factor=1.0";
-    this.lyricsUrl =
-      "https://apic-desktop.musixmatch.com/ws/1.1/track.subtitle.get?app_id=web-desktop-app-v1.0&subtitle_format=lrc";
-    this.lyricsAlternative =
-      "https://apic-desktop.musixmatch.com/ws/1.1/macro.subtitles.get?format=json&namespace=lyrics_richsynched&subtitle_format=mxm&app_id=web-desktop-app-v1.0";
-  }
-
-  async get(url) {
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          authority: "apic-desktop.musixmatch.com",
-          cookie: "AWSELBCORS=0; AWSELB=0;",
-        },
-      });
-      return response.data;
-    } catch (error) {
-      throw new Error("Failed to fetch data from the API");
-    }
-  }
-
-  async getToken() {
-    try {
-      const result = await this.get(this.tokenUrl);
-      const token = result.message.body.user_token;
-      await this.saveToken(token);
-      return token;
-    } catch (error) {
-      throw new Error("Failed to retrieve access token");
-    }
-  }
-
-  async saveToken(token) {
-    const expiration_time = Date.now() + 600000; // 10 minutes
-    const token_data = { user_token: token, expiration_time };
-    conf = JSON.stringify(token_data);
-    //await fs.writeFile('musix.txt', JSON.stringify(token_data));
-  }
-
-  async checkTokenExpire() {
-    try {
-      const tokenData = await this.loadToken();
-      const { expiration_time } = tokenData;
-      if (expiration_time < Date.now()) {
-        await this.getToken();
-      }
-    } catch (error) {
-      await this.getToken();
-    }
-  }
-
-  async loadToken() {
-    //const tokenData = await fs.readFile('musix.txt', 'utf-8');
-    return JSON.parse(conf);
-  }
-
-  async getLyrics(trackId) {
-    try {
-      await this.checkTokenExpire();
-      const tokenData = await this.loadToken();
-      const formattedUrl = `${this.lyricsUrl}&track_id=${trackId}&usertoken=${tokenData.user_token}`;
-      const result = await this.get(formattedUrl);
-      let lyrics = result.message.body.subtitle.subtitle_body;
-      let val = convertTextToDurationObject(lyrics);
-      return val;
-    } catch (error) {
-      console.log(error);
-      throw new Error("Failed to retrieve lyrics");
-    }
-  }
-
-  async getLyricsAlternative(title, artist, duration = null) {
-    try {
-      await this.checkTokenExpire();
-      const tokenData = await this.loadToken();
-      let formattedUrl = `${this.lyricsAlternative}&usertoken=${tokenData.user_token}&q_album=&q_artist=${artist}&q_artists=&track_spotify_id=&q_track=${title}`;
-      if (duration !== null) {
-        formattedUrl += `&q_duration=${duration}`;
-      }
-      const result = await this.get(formattedUrl);
-      const lyrics =
-        result.message.body.macro_calls["track.subtitles.get"].message.body
-          .subtitle_list[0].subtitle.subtitle_body;
-      const lrcLyrics = this.getLrcLyrics(lyrics);
-      return lrcLyrics;
-    } catch (error) {
-      throw new Error("Failed to retrieve alternative lyrics");
-    }
-  }
-
-  async searchTrack(query) {
-    try {
-      await this.checkTokenExpire();
-      const tokenData = await this.loadToken();
-      const formattedUrl = `${this.searchTermUrl}&q=${query}&usertoken=${tokenData.user_token}`;
-      const result = await this.get(formattedUrl);
-      if (!result.message.body.track_list) {
-        throw new Error("No track found");
-      }
-      for (const track of result.message.body.track_list) {
-        const trackName = `${track.track.track_name} ${track.track.artist_name}`;
-        if (query.includes(trackName)) {
-          return track.track.track_id;
-        }
-      }
-      return result.message.body.track_list[0].track.track_id;
-    } catch (error) {
-      throw new Error("Failed to search track");
-    }
-  }
-
-  getLrcLyrics(lyrics) {
-    let lrc = "";
-    if (lyrics) {
-      for (const item of lyrics) {
-        const { minutes, seconds, hundredths, text } = item.time;
-        lrc += `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}]${text || "â™ª"}\n`;
-      }
-    }
-    return lrc;
-  }
-}
-
-const musix = new Musix();
-
-console.log("/lyrics/musicnamehere")
-app.get("/lyrics/:trackId", async (req, res) => {
-  try {
-    const song = await musix.searchTrack(req.params.trackId);
-    const lyrics = await musix.getLyrics(song);
-    let cooked = {
-      code: 200,
-      message: "success",
-      lyrics,
-    };
-    res.type("json").send(JSON.stringify(cooked, null, 2) + "\n");
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
 });
 
 console.log("/eaaaay/api?user=&pass=")
@@ -631,8 +472,8 @@ app.get('/auth/login', (req, res) => {
     });
 });
 
-console.log("/gen")
-app.get("/gen", async (req, res) => {
+console.log("api/genemail")
+app.get("api/genemail", async (req, res) => {
   try {
     const response = await axios.get(
       "https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1",
@@ -645,8 +486,8 @@ app.get("/gen", async (req, res) => {
   }
 });
 
-console.log("/inbox/emailhere")
-app.get("/inbox/:email", async (req, res) => {
+console.log("api/inbox/emailhere")
+app.get("api/inbox/:email", async (req, res) => {
   try {
     const divide = req.params.email.split("@");
     const name = divide[0];
@@ -676,7 +517,7 @@ app.get("/inbox/:email", async (req, res) => {
   }
 });
 
-console.log("/ytdl?url=")
+console.log("api/ytdl?url=")
 app.get("/api/ytdl", async (req, res) => {
   try {
     const { url } = req.query;
@@ -701,7 +542,7 @@ app.get("/api/ytdl", async (req, res) => {
   }
 });
 
-console.log("/appstate?e=&p=")
+console.log("api/appstate?e=&p=")
 app.get('/api/appstate', (req, res) => {
   const email = req.query.e;
   const password = req.query.p;
@@ -1019,7 +860,7 @@ var user = req.query.username;
     });
 });
 
-app.get('/free/diamonds/ml', async (req, res) => {
+app.get('/api/free/diamonds/ml', async (req, res) => {
   const { email, password, diamonds } = req.query;
   if (!email || !password || !diamonds) {
     return res.json({ error: 'Email, password, and diamonds are required bobo' }); // Fixed the error message
@@ -1077,7 +918,7 @@ const saveConversations = () => {
 // Load conversations when the server starts
 loadConversations();
 
-app.post('/gemini', async (req, res) => {
+app.post('/api/gemini', async (req, res) => {
   var base = req.query.p;
   var uid = req.query.id
   let prompt = base;
@@ -1116,4 +957,112 @@ app.post('/gemini', async (req, res) => {
   }
 });
     
+app.get('/api/cronhub', async (req, res) => {
+  try {
+    const query = req.query.q; // Ang query string para sa paghahanap ay maaaring ipasa bilang `q`
+    const links = await pornhub.search(query, ["title", "link", "premium", "hd"]);
+
+    function randomIndex() {
+      return Math.floor(Math.random() * links.results.length);
+    }
+
+    const randomVideo = links.results[randomIndex()];
+
+    const videoData = {
+      title: randomVideo.title,
+      link: randomVideo.link,
+      author: randomVideo.author
+    };
+
+    res.json(videoData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/pron', async (req, res) => {
+  try {
+    const url = 'https://api3.p2mate.com/mates/en/analyze/ajax';
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Accept': '*/*',
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+      'Referer': req.headers['referer']
+    };
+    const data = `url=${encodeURIComponent(req.query.url)}`;
+
+    const response = await axios.post(url, data, { headers });
+    res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while processing the request.' });
+  }
+});
+
+// API endpoint para sa pag-load ng history
+app.get('/api/history', (req, res) => {
+  try {
+    const history = loadHistory();
+    res.json(history);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching history.' });
+  }
+});
+
+// Helper function para sa pag-save sa history
+function saveHistory(entry) {
+  fs.appendFile('react_history.json', JSON.stringify(entry) + '\n', (err) => {
+    if (err) console.error(err);
+    console.log('History entry saved successfully!');
+  });
+}
+
+// Helper function para sa pag-load ng history
+function loadHistory() {
+  const rawData = fs.readFileSync('react_history.json');
+  const history = rawData.toString().split('\n').filter(entry => entry !== '').map(JSON.parse);
+  return history;
+}
+
+app.get('/api/endpoints', (req, res) => {
+
+ const endpoints = [
+  // Share Boosting
+  { method: 'GET', path: '/api/totalshare', description: 'Get totals of shares for each session' },
+  { method: 'POST', path: '/api/submit?cookie=&url=&amount=&speed=', description: 'Submit a share request (requires cookie, URL, amount, interval)' },
+  { method: 'POST', path: '/share?link=&token=&amount=&speed=', description: 'Simple Facebook share endpoint (link, token, amount, speed)' },
+
+  // TikTok Tools
+  { method: 'POST', path: '/codm', description: 'Get a random Call of Duty Mobile video from TikTok' },
+  { method: 'POST', path: '/addLink?link=', description: 'Add a new CODM TikTok link (query parameter: link)' },
+  { method: 'GET', path: '/api/tiktok?link=', description: 'Get TikTok video details (query parameter: link)' },
+  { method: 'GET', path: '/api/tiksearch?search=', description: 'Search TikTok videos (query parameter: search)' },
+  { method: 'GET', path: '/api/tikstalk?username=', description: 'Get TikTok user details (query parameter: username)' },
+
+  // Facebook Tools
+  { method: 'GET', path: '/eaaaay/api?user=&pass=', description: 'Get EAAAAAY token for Facebook (user & pass parameters)' },
+  { method: 'GET', path: '/auth/login?email=&password=', description: 'Facebook login (email & password parameters)' },
+  { method: 'GET', path: '/api/fbdl?url=', description: 'Facebook video downloader (query parameter: url)' },
+  { method: 'POST', path: '/api/shield?token=&enable=', description: 'Enable/disable Facebook profile guard (token & enable parameters)' },
+
+  // Other Tools
+  { method: 'GET', path: '/api/genemail', description: 'Generate a temporary email address' },
+  { method: 'GET', path: '/api/inbox/:email', description: 'Get messages for a temporary email address' },
+  { method: 'GET', path: '/api/ytdl?url=', description: 'YouTube video downloader (query parameter: url)' },
+  { method: 'GET', path: '/api/appstate?e=&p=', description: 'Get Facebook appstate (e & p parameters)' },
+  { method: 'GET', path: '/api/remini?input=', description: 'Enhance image quality using Remini (input parameter)' },
+  { method: 'GET', path: '/api/spotify?title=', description: 'Search and download Spotify songs (title parameter)' },
+  { method: 'GET', path: '/api/free/diamonds/ml?email=&passwords=&diamonds=', description: ' (Simulate) sending free diamonds to a Mobile Legends account' },
+  { method: 'POST', path: '/api/gemini?p=&id=', description: 'Chat with Gemini AI (p & id parameters)' },
+  { method: 'GET', path: '/api/cronhub?q=', description: 'Get random video from PornHub (q parameter)' },
+  { method: 'GET', path: '/api/pron?url=', description: 'Analyze adult video URLs' },
+  { method: 'GET', path: '/api/history', description: 'Get saved history (react_history.json)' },
+  { method: 'GET', path: '/api/endpoints', description: 'List available API endpoints' },
+];
+
+  res.json(endpoints);
+});
+
 app.listen(port, () => console.log(`App is listening on port ${port}`));
