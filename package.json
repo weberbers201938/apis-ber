@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "justalk/pornhub-api": "^3.5.0",
+    "@justalk/pornhub-api": "3.5.0",
     "body-parser": "1.20.2",
     "@google/generative-ai": "^0.3.1",
     "@types/node": "^18.0.6",
