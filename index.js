@@ -1,3 +1,4 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
 const { facebook, spotify, spotifydl, remini } = require('betabotz-tools') 
