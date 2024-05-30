@@ -41,8 +41,8 @@ res.sendFile(path.join(__dirname, 'index.html'));
 
 const total = new Map();
 
-console.log("api/totalshare (totals of share)")
-app.get('api/totalshare', (req, res) => {
+console.log("/api/totalshare (totals of share)")
+app.get('/api/totalshare', (req, res) => {
   const data = Array.from(total.values()).map((link, index)  => ({
     session: index + 1,
     url: link.url,
