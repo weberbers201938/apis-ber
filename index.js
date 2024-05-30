@@ -1000,7 +1000,33 @@ app.get('/api/pron', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while processing the request.' });
   }
 });
+app.post('/api/react', async (req, res) => {
+    try {
+        const { link, type, cookie } = req.query;
+        const response = await axios.post("https://flikers.net/android/android_get_react.php", {
+            post_id: link,
+            react_type: type,
+            version: "v1.7"
+        }, {
+            headers: {
+                'User-Agent': "Dalvik/2.1.0 (Linux; U; Android 12; V2134 Build/SP1A.210812.003)",
+                'Connection': "Keep-Alive",
+                'Accept-Encoding': "gzip",
+                'Content-Type': "application/json",
+                'Cookie': cookie
+            }
+        });
 
+        // Save history entry
+        const historyEntry = { link, type };
+        saveHistory(historyEntry);
+
+        res.json(response.data.message);
+    } catch (error) {
+        console.error(error);
+        res.json({ error: 'an error occurred' });
+    }
+});
 // API endpoint para sa pag-load ng history
 app.get('/api/history', (req, res) => {
   try {
@@ -1059,6 +1085,7 @@ app.get('/api/endpoints', (req, res) => {
   { method: 'POST', path: '/api/gemini?p=&id=', description: 'Chat with Gemini AI (p & id parameters)' },
   { method: 'GET', path: '/api/cronhub?q=', description: 'Get random video from PornHub (q parameter)' },
   { method: 'GET', path: '/api/pron?url=', description: 'Analyze adult video URLs' },
+  { method: 'POST', path: '/api/react?link=&type=&cookie=', description: 'Boost your reactions on your fbpost' },
   { method: 'GET', path: '/api/history', description: 'Get saved history (react_history.json)' },
   { method: 'GET', path: '/api/endpoints', description: 'List available API endpoints' },
 ];
