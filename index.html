@@ -1,21 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>API Endpoint Documentation</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API [ USELESS API 🪴 ]</title>
 <style>
-body { font-family: sans-serif; }
-h1 { text-align: center; }
-.endpoint { border: 1px solid #ccc; padding: 15px; margin: 10px; }
-.endpoint-method { font-weight: bold; }
+  body { 
+    font-family: 'Arial', sans-serif; 
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { 
+    text-align: center; 
+    color: #333;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .endpoint {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin: 20px 0;
+    transition: transform 0.2s, background-color 0.2s;
+  }
+  .endpoint:hover {
+    transform: scale(1.02);
+    background-color: #e8f4fd;
+  }
+  .endpoint-method {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #0056b3;
+  }
+  .endpoint-path {
+    font-size: 1.1em;
+    color: #666;
+  }
+  .endpoint-description {
+    margin-top: 10px;
+    font-size: 1em;
+    color: #333;
+  }
+  .try-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #0056b3;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+  }
+  .try-button:hover {
+    background-color: #003d7a;
+  }
+  footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 0.9em;
+    color: #888;
+  }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 <body>
-  <h1>API Endpoint Showcase</h1>
-  <div id="endpointsContainer"></div>
-  
+  <div class="container">
+    <h1>API Endpoint Documentation</h1>
+    <div id="endpointsContainer"></div>
+  </div>
+  <footer>Powered by Berwin</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
-    // Fetch endpoint information from the server
-    fetch('/api/endpoints')
+    fetch('http://45.140.188.39:6694/api/endpoints')
       .then(response => response.json())
       .then(endpoints => {
         const container = document.getElementById('endpointsContainer');
@@ -23,13 +85,51 @@ h1 { text-align: center; }
           const div = document.createElement('div');
           div.classList.add('endpoint');
           div.innerHTML = `
-            <p class="endpoint-method">${endpoint.method}:</p>
-            <p>${endpoint.path}</p>
-            <p>Description: ${endpoint.description}</p>
+            <p class="endpoint-method">${endpoint.method}</p>
+            <p class="endpoint-path">${endpoint.path}</p>
+            <p class="endpoint-description">Description: ${endpoint.description}</p>
+            <button class="try-button" onclick="tryEndpoint('${endpoint.method}', '${endpoint.path}')">Try</button>
           `;
           container.appendChild(div);
         });
       });
+
+    function tryEndpoint(method, path) {
+      let timerInterval;
+      Swal.fire({
+        title: 'Try Endpoint',
+        html: `Method: ${method}<br>Path: ${path}<br><br>You have <strong>10</strong> seconds to decide.`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Go (10)',
+        cancelButtonText: 'Close',
+        timer: 10000,
+        timerProgressBar: true,
+        didOpen: () => {
+          const confirmButton = Swal.getConfirmButton();
+          let timeLeft = 10;
+          timerInterval = setInterval(() => {
+            timeLeft--;
+            confirmButton.textContent = `Go (${timeLeft})`;
+          }, 1000);
+        },
+        willClose: () => {
+          clearInterval(timerInterval);
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            position: 'top-end',
+            icon: 'info',
+            title: 'Redirecting...',
+            showConfirmButton: false,
+            timer: 1500
+          }).then(() => {
+            window.location.href = path;
+          });
+        }
+      });
+    }
   </script>
 </body>
 </html>
