@@ -79,7 +79,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
-    fetch('http://45.140.188.39:6694/api/endpoints')
+    fetch('/api/endpoints')
       .then(response => response.json())
       .then(endpoints => {
         const container = document.getElementById('endpointsContainer');
