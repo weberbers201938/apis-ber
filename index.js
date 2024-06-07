@@ -1,9 +1,10 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const crypto = require('crypto');
 const appstate = require("./fca/orion/fca-project-orion");
 const fs = require("fs");
 const { facebook, spotify, spotifydl, remini } = require('betabotz-tools') 
 const cheerio = require('cheerio');
-const port = 26011;
+const port = 6694;
 const snapsave = require('snapsave-downloader-itj');
 const pornhub = require('@justalk/pornhub-api');
 const qs = require('querystring');
@@ -41,7 +42,7 @@ res.sendFile(path.join(__dirname, 'index.html'));
 
 const total = new Map();
 
-console.log("/api/totalshare (totals of share)")
+console.log("api/totalshare (totals of share)")
 app.get('/api/totalshare', (req, res) => {
   const data = Array.from(total.values()).map((link, index)  => ({
     session: index + 1,
@@ -379,7 +380,7 @@ app.post("/codm", async function (req, res) {
   try {
     const randomCodm = Math.floor(Math.random() * addedLinks.length);
     const response = await axios.get(
-      `https://unknown-apis.onrender.com/tikdl?url=${addedLinks[randomCodm]}`,
+      `http://45.140.188.39:6694/api/tiktok?link=${addedLinks[randomCodm]}`,
     );
     res.json(response.data);
   } catch (error) {
@@ -474,7 +475,7 @@ app.get('/auth/login', (req, res) => {
 });
 
 console.log("api/genemail")
-app.get("api/genemail", async (req, res) => {
+app.get("/api/genemail", async (req, res) => {
   try {
     const response = await axios.get(
       "https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1",
@@ -488,7 +489,7 @@ app.get("api/genemail", async (req, res) => {
 });
 
 console.log("api/inbox/emailhere")
-app.get("api/inbox/:email", async (req, res) => {
+app.get("/api/inbox/:email", async (req, res) => {
   try {
     const divide = req.params.email.split("@");
     const name = divide[0];
@@ -1088,9 +1089,139 @@ app.get('/api/endpoints', (req, res) => {
   { method: 'POST', path: '/api/react?link=&type=&cookie=', description: 'Boost your reactions on your fbpost' },
   { method: 'GET', path: '/api/history', description: 'Get saved history (react_history.json)' },
   { method: 'GET', path: '/api/endpoints', description: 'List available API endpoints' },
+     { method: 'POST', path: '/api/fbcreate', description: 'Automatic create fb account' },
 ];
 
   res.json(endpoints);
 });
+const genRandomString = (length) => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+};
 
+const getRandomDate = (start, end) => {
+    const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    return date;
+};
+
+const getRandomName = () => {
+    const names = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Laura', 'Robert', 'Emily', 'William', 'Emma'];
+    const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+    return {
+        firstName: names[Math.floor(Math.random() * names.length)],
+        lastName: surnames[Math.floor(Math.random() * surnames.length)]
+    };
+};
+
+const getMailDomains = async () => {
+    const url = 'https://api.mail.tm/domains';
+    try {
+        const response = await axios.get(url);
+        return response.data['hydra:member'];
+    } catch (error) {
+        console.error(`[×] E-mail Error: ${error}`);
+        return null;
+    }
+};
+
+const createMailTmAccount = async () => {
+    const mailDomains = await getMailDomains();
+    if (mailDomains) {
+        const domain = mailDomains[Math.floor(Math.random() * mailDomains.length)].domain;
+        const username = genRandomString(10);
+        const password = genRandomString(12);
+        const birthday = getRandomDate(new Date(1976, 0, 1), new Date(2004, 0, 1));
+        const { firstName, lastName } = getRandomName();
+        const url = 'https://api.mail.tm/accounts';
+        const data = { address: `${username}@${domain}`, password: password };
+        try {
+            const response = await axios.post(url, data, { headers: { 'Content-Type': 'application/json' } });
+            if (response.status === 201) {
+                console.log(`[✓] E-mail Created: ${username}@${domain}`);
+                return { email: `${username}@${domain}`, password, firstName, lastName, birthday };
+            } else {
+                console.error(`[×] Email Error: ${response.data}`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`[×] Error: ${error}`);
+            return null;
+        }
+    } else {
+        return null;
+    }
+};
+
+const registerFacebookAccount = async (email, password, firstName, lastName, birthday) => {
+    const api_key = '882a8490361da98702bf97a021ddc14d';
+    const secret = '62f8ce9f74b12f84c123cc23437a4a32';
+    const gender = Math.random() < 0.5 ? 'M' : 'F';
+    const req = {
+        api_key: api_key,
+        attempt_login: true,
+        birthday: birthday.toISOString().split('T')[0],
+        client_country_code: 'EN',
+        fb_api_caller_class: 'com.facebook.registration.protocol.RegisterAccountMethod',
+        fb_api_req_friendly_name: 'registerAccount',
+        firstname: firstName,
+        format: 'json',
+        gender: gender,
+        lastname: lastName,
+        email: email,
+        locale: 'en_US',
+        method: 'user.register',
+        password: password,
+        reg_instance: genRandomString(32),
+        return_multiple_errors: true
+    };
+    const sig = Object.keys(req).sort().map(k => `${k}=${req[k]}`).join('') + secret;
+    const ensig = crypto.createHash('md5').update(sig).digest('hex');
+    req.sig = ensig;
+
+    const api_url = 'https://b-api.facebook.com/method/user.register';
+    try {
+        const response = await axios.post(api_url, new URLSearchParams(req), {
+            headers: { 'User-Agent': '[FBAN/FB4A;FBAV/35.0.0.48.273;FBDM/{density=1.33125,width=800,height=1205};FBLC/en_US;FBCR/;FBPN/com.facebook.katana;FBDV/Nexus 7;FBSV/4.1.1;FBBK/0;]' }
+        });
+        const reg = response.data;
+        console.log(`Registration Success`);
+        return reg;
+    } catch (error) {
+        console.error(`[×] Registration Error: ${error}`);
+        return null;
+    }
+};
+
+app.post('/api/fbcreate', async (req, res) => {
+    const numAccounts = req.query.amount;
+    if (!numAccounts || isNaN(numAccounts) || numAccounts <= 0) {
+        return res.status(400).json({ error: 'Invalid number of accounts requested' });
+    }
+
+    const accounts = [];
+    for (let i = 0; i < numAccounts; i++) {
+        const account = await createMailTmAccount();
+        if (account) {
+            const regData = await registerFacebookAccount(account.email, account.password, account.firstName, account.lastName, account.birthday);
+            if (regData) {
+                accounts.push({
+                    email: account.email,
+                    password: account.password,
+                    firstName: account.firstName,
+                    lastName: account.lastName,
+                    birthday: account.birthday.toISOString().split('T')[0],
+                    gender: regData.gender,
+                    userId: regData.new_user_id,
+                    token: regData.session_info.access_token
+                });
+            }
+        }
+    }
+
+    res.json(accounts);
+});
 app.listen(port, () => console.log(`App is listening on port ${port}`));
