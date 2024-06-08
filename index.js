@@ -1094,68 +1094,41 @@ app.get('/api/endpoints', (req, res) => {
 
   res.json(endpoints);
 });
-    const getProxies = async () => {
-    const proxyUrl = 'https://sunny9577.github.io/proxy-scraper/proxies.json';
-    try {
-        const response = await axios.get(proxyUrl);
-        return response.data;
-    } catch (error) {
-        console.error(`[×] Proxy Error: ${error}`);
-        return null;
+        const genRandomString = (length) => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
+    return result;
 };
 
-const getRandomProxy = async () => {
-    const proxies = await getProxies();
-    if (!proxies || proxies.length === 0) {
-        console.error('[×] No proxies available.');
+const getRandomDate = (start, end) => {
+    const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    return date;
+};
+
+const getRandomName = () => {
+    const names = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Laura', 'Robert', 'Emily', 'William', 'Emma'];
+    const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+    return {
+        firstName: names[Math.floor(Math.random() * names.length)],
+        lastName: surnames[Math.floor(Math.random() * surnames.length)]
+    };
+};
+
+const getMailDomains = async () => {
+    const url = 'https://api.mail.tm/domains';
+    try {
+        const response = await axios.get(url);
+        return response.data['hydra:member'];
+    } catch (error) {
+        console.error(`[×] E-mail Error: ${error}`);
         return null;
     }
-    const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
-    return `http://${randomProxy.ip}:${randomProxy.port}`;
 };
 
 const createMailTmAccount = async () => {
-    const proxyUrl = await getRandomProxy();
-    if (!proxyUrl) {
-        console.error('[×] No proxy available for Mail.tm account creation.');
-        return null;
-    }
-
-    const genRandomString = (length) => {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-        return result;
-    };
-
-    const getRandomDate = (start, end) => {
-        const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-        return date;
-    };
-
-    const getRandomName = () => {
-        const names = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Laura', 'Robert', 'Emily', 'William', 'Emma'];
-        const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-        return {
-            firstName: names[Math.floor(Math.random() * names.length)],
-            lastName: surnames[Math.floor(Math.random() * surnames.length)]
-        };
-    };
-
-    const getMailDomains = async () => {
-        const url = 'https://api.mail.tm/domains';
-        try {
-            const response = await axios.get(url, { proxy: proxyUrl });
-            return response.data['hydra:member'];
-        } catch (error) {
-            console.error(`[×] E-mail Error: ${error}`);
-            return null;
-        }
-    };
-
     const mailDomains = await getMailDomains();
     if (mailDomains) {
         const domain = mailDomains[Math.floor(Math.random() * mailDomains.length)].domain;
@@ -1166,7 +1139,7 @@ const createMailTmAccount = async () => {
         const url = 'https://api.mail.tm/accounts';
         const data = { address: `${username}@${domain}`, password: password };
         try {
-            const response = await axios.post(url, data, { headers: { 'Content-Type': 'application/json' }, proxy: proxyUrl });
+            const response = await axios.post(url, data, { headers: { 'Content-Type': 'application/json' } });
             if (response.status === 201) {
                 console.log(`[✓] E-mail Created: ${username}@${domain}`);
                 return { email: `${username}@${domain}`, password, firstName, lastName, birthday };
@@ -1184,12 +1157,6 @@ const createMailTmAccount = async () => {
 };
 
 const registerFacebookAccount = async (email, password, firstName, lastName, birthday) => {
-    const proxyUrl = await getRandomProxy();
-    if (!proxyUrl) {
-        console.error('[×] No proxy available for Facebook registration.');
-        return null;
-    }
-
     const api_key = '882a8490361da98702bf97a021ddc14d';
     const secret = '62f8ce9f74b12f84c123cc23437a4a32';
     const gender = Math.random() < 0.5 ? 'M' : 'F';
@@ -1218,8 +1185,7 @@ const registerFacebookAccount = async (email, password, firstName, lastName, bir
     const api_url = 'https://b-api.facebook.com/method/user.register';
     try {
         const response = await axios.post(api_url, new URLSearchParams(req), {
-            headers: { 'User-Agent': '[FBAN/FB4A;FBAV/35.0.0.48.273;FBDM/{density=1.33125,width=800,height=1205};FBLC/en_US;FBCR/;FBPN/com.facebook.katana;FBDV/Nexus 7;FBSV/4.1.1;FBBK/0;]' },
-            proxy: proxyUrl
+            headers: { 'User-Agent': '[FBAN/FB4A;FBAV/35.0.0.48.273;FBDM/{density=1.33125,width=800,height=1205};FBLC/en_US;FBCR/;FBPN/com.facebook.katana;FBDV/Nexus 7;FBSV/4.1.1;FBBK/0;]' }
         });
         const reg = response.data;
         console.log(`Registration Success`);
@@ -1256,6 +1222,8 @@ app.post('/api/fbcreate', async (req, res) => {
         }
     }
 
-    res.json(accounts)
+    res.json(accounts);
 });
+
+
 app.listen(port, () => console.log(`App is listening on port ${port}`));
